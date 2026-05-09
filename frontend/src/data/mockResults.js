@@ -73,6 +73,7 @@ export const mockResults = {
       modules: ['Invite ladder replaces dead-end status', 'Proof rail promoted above agenda', 'Luma/GitHub moved to resource drawer'],
       experiments: ['Next test: launch kit vs cohort headline', 'Mobile sticky invite bar', 'Judge proof carousel'],
       stickyCta: 'Sticky mobile bar: Claim invite + get setup guide',
+      fullPagePath: '/auto-ab/generated/variant-b.html',
       changes: ['Closed status converted into a live next-cohort invite ladder', 'Hero offer changed from attending a closed event to claiming a launch kit', 'Poster demoted into proof so the form owns the visual hierarchy', 'Luma and GitHub links moved into a resource drawer after email capture', 'Next loop will test sticky mobile invite bar and judge-proof carousel'],
     },
   },

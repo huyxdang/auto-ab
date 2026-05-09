@@ -623,6 +623,7 @@ def _website2_preview_site(tone: str, changes: list[str] | None = None, variant:
             "modules": ["Invite ladder replaces dead-end status", "Proof rail promoted above agenda", "Luma/GitHub moved to resource drawer"],
             "experiments": ["Next test: launch kit vs cohort headline", "Mobile sticky invite bar", "Judge proof carousel"],
             "stickyCta": "Sticky mobile bar: Claim invite + get setup guide",
+            "fullPagePath": "/auto-ab/generated/variant-b.html",
             "changes": list(changes or [])[:5] or [
                 "Closed status converted into a live next-cohort invite ladder",
                 "Hero offer changed from attending a closed event to claiming a launch kit",
