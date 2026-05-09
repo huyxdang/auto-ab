@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SignalForge AI | B2B AI SaaS</title>
+  <meta name="description" content="A fake B2B AI SaaS website for testing A/B optimization flows.">
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5d6878;
+      --bg: #f7f9fb;
+      --panel: #ffffff;
+      --line: #dfe5ec;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --warm: #f59e0b;
+      --blue: #2563eb;
+      --shadow: 0 18px 42px rgba(23, 32, 42, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(223, 229, 236, 0.9);
+      background: rgba(247, 249, 251, 0.88);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 72px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .button:hover {
+      background: var(--accent-dark);
+    }
+
+    .button.secondary {
+      background: white;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .hero {
+      padding: 78px 0 44px;
+      background:
+        linear-gradient(110deg, rgba(247, 249, 251, 0.96) 0%, rgba(247, 249, 251, 0.86) 45%, rgba(247, 249, 251, 0.55) 68%),
+        url("https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1800&q=80") center / cover;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--accent-dark);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    h1 {
+      max-width: 780px;
+      margin: 18px 0 18px;
+      font-size: clamp(2.6rem, 7vw, 6.4rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 690px;
+      color: #445061;
+      font-size: clamp(1.02rem, 2vw, 1.22rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .proof-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 34px;
+      max-width: 720px;
+    }
+
+    .proof {
+      padding: 12px 14px;
+      border: 1px solid rgba(223, 229, 236, 0.85);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .proof strong {
+      display: block;
+      font-size: 1.3rem;
+      line-height: 1.1;
+    }
+
+    .proof span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .product-panel {
+      border: 1px solid rgba(223, 229, 236, 0.9);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status {
+      color: var(--accent-dark);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .pipeline {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .pipeline-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfd;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .pipeline-item h3 {
+      margin: 0;
+      font-size: 0.96rem;
+    }
+
+    .pipeline-item p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .score {
+      font-weight: 900;
+    }
+
+    .section {
+      padding: 70px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section h2 {
+      margin: 0;
+      max-width: 680px;
+      font-size: clamp(1.8rem, 4vw, 3.35rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      max-width: 420px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      min-height: 250px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: #e7f5f3;
+      color: var(--accent-dark);
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1.18rem;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+    }
+
+    .card ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+    }
+
+    .band {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #edf3f4;
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .step {
+      padding: 18px;
+      border-left: 4px solid var(--accent);
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.8rem;
+    }
+
+    .step h3 {
+      margin: 8px 0 6px;
+      font-size: 1.05rem;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .quote {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .quote p {
+      margin: 0;
+      font-size: 1.35rem;
+      line-height: 1.35;
+    }
+
+    .quote footer {
+      margin-top: 18px;
+      color: var(--muted);
+    }
+
+    .table {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.8fr 0.8fr;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row.header {
+      background: #f1f5f7;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 0.84rem;
+      text-transform: uppercase;
+    }
+
+    .pricing {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .price {
+      display: flex;
+      flex-direction: column;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .price.featured {
+      border-color: rgba(15, 118, 110, 0.42);
+      box-shadow: 0 18px 42px rgba(15, 118, 110, 0.16);
+    }
+
+    .price h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .price .amount {
+      margin: 16px 0 8px;
+      font-size: 2.1rem;
+      font-weight: 900;
+    }
+
+    .price p,
+    .price li {
+      color: var(--muted);
+    }
+
+    .price ul {
+      margin: 16px 0 22px;
+      padding-left: 18px;
+    }
+
+    .price .button {
+      margin-top: auto;
+    }
+
+    .final {
+      padding: 72px 0;
+      background: var(--ink);
+      color: white;
+    }
+
+    .final-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .final h2 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .final p {
+      max-width: 520px;
+      color: #c5ced9;
+      margin: 16px 0 0;
+    }
+
+    footer.site-footer {
+      padding: 28px 0;
+      color: var(--muted);
+      background: #111820;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero-grid,
+      .split,
+      .final-inner {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .cards,
+      .workflow,
+      .pricing {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .proof-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .wrap {
+        width: min(100% - 22px, 1180px);
+      }
+
+      .hero {
+        padding-top: 50px;
+      }
+
+      .hero-actions,
+      .final-inner,
+      .footer-inner {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .cards,
+      .workflow,
+      .pricing,
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: grid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Main navigation">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark">SF</span>
+        <span>SignalForge AI</span>
+      </a>
+      <div class="nav-links">
+        <a href="#platform">Platform</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#results">Results</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <a class="button" href="#demo">Book demo</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">AI revenue operations for B2B teams</span>
+        <h1>Turn scattered GTM data into decisions your team can trust.</h1>
+        <p class="hero-copy">
+          SignalForge AI connects CRM, product usage, support, and campaign data so sales and marketing teams can predict pipeline risk, prioritize accounts, and launch the next best action.
+        </p>
+        <div class="hero-actions">
+          <a class="button" href="#demo">Start pipeline audit</a>
+          <a class="button secondary" href="#platform">See platform</a>
+        </div>
+        <div class="proof-row" aria-label="Company metrics">
+          <div class="proof"><strong>31%</strong><span>higher qualified pipeline</span></div>
+          <div class="proof"><strong>18 hrs</strong><span>saved per ops analyst weekly</span></div>
+          <div class="proof"><strong>92%</strong><span>forecast coverage accuracy</span></div>
+        </div>
+      </div>
+
+      <aside class="product-panel" aria-label="SignalForge AI product preview">
+        <div class="panel-top">
+          <strong>Account Intelligence</strong>
+          <span class="status">Live signals</span>
+        </div>
+        <div class="pipeline">
+          <div class="pipeline-item">
+            <span class="dot"></span>
+            <div>
+              <h3>Northstar Labs</h3>
+              <p>Usage spike, budget owner engaged, renewal in 42 days</p>
+            </div>
+            <span class="score">94</span>
+          </div>
+          <div class="pipeline-item">
+            <span class="dot" style="background: var(--warm)"></span>
+            <div>
+              <h3>Atlas Retail Group</h3>
+              <p>Champion left, pricing page visits rising</p>
+            </div>
+            <span class="score">71</span>
+          </div>
+          <div class="pipeline-item">
+            <span class="dot" style="background: var(--blue)"></span>
+            <div>
+              <h3>Meridian Cloud</h3>
+              <p>Intent surge across data governance topics</p>
+            </div>
+            <span class="score">88</span>
+          </div>
+          <div class="pipeline-item">
+            <span class="dot" style="background: #dc2626"></span>
+            <div>
+              <h3>BrightPath Finance</h3>
+              <p>Open support issues blocking expansion motion</p>
+            </div>
+            <span class="score">52</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" id="platform">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>One AI workspace for revenue signals, account context, and action.</h2>
+          <p>Built for B2B SaaS teams that have the data, but still make weekly pipeline calls from spreadsheets and gut feel.</p>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <div class="icon">01</div>
+            <h3>Signal unification</h3>
+            <p>Sync Salesforce, HubSpot, Segment, Zendesk, Gong, and warehouse tables into an account-level decision graph.</p>
+          </article>
+          <article class="card">
+            <div class="icon">02</div>
+            <h3>Predictive scoring</h3>
+            <p>Model expansion, churn, buying intent, and campaign readiness with explainable signals for every account.</p>
+          </article>
+          <article class="card">
+            <div class="icon">03</div>
+            <h3>AI playbooks</h3>
+            <p>Generate sales briefs, nurture segments, expansion prompts, and risk alerts from the same governed account data.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section band" id="workflow">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>From messy data to coordinated GTM action in four steps.</h2>
+          <p>SignalForge keeps human teams in control while removing the slow handoff between analytics and execution.</p>
+        </div>
+        <div class="workflow">
+          <article class="step">
+            <span>Step 1</span>
+            <h3>Connect sources</h3>
+            <p>Map CRM, product, support, and marketing data to account records.</p>
+          </article>
+          <article class="step">
+            <span>Step 2</span>
+            <h3>Rank signals</h3>
+            <p>Score every account by risk, intent, expansion, and urgency.</p>
+          </article>
+          <article class="step">
+            <span>Step 3</span>
+            <h3>Generate plays</h3>
+            <p>Create the next action for sales, success, and marketing teams.</p>
+          </article>
+          <article class="step">
+            <span>Step 4</span>
+            <h3>Measure impact</h3>
+            <p>Track conversion, cycle time, retention, and forecast lift.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="results">
+      <div class="wrap split">
+        <article class="quote">
+          <p>"SignalForge replaced three weekly ops meetings with a live view of which accounts needed attention and why."</p>
+          <footer>
+            <strong>Maya Chen</strong><br>
+            VP Revenue Operations, VectorStack
+          </footer>
+        </article>
+        <div class="table" aria-label="Customer result table">
+          <div class="row header">
+            <span>Metric</span>
+            <span>Before</span>
+            <span>After</span>
+          </div>
+          <div class="row">
+            <span>Qualified opportunity rate</span>
+            <span>14.2%</span>
+            <span>19.8%</span>
+          </div>
+          <div class="row">
+            <span>At-risk renewal detection</span>
+            <span>39 days</span>
+            <span>74 days</span>
+          </div>
+          <div class="row">
+            <span>Manual account research</span>
+            <span>11 hrs/week</span>
+            <span>2 hrs/week</span>
+          </div>
+          <div class="row">
+            <span>Forecast variance</span>
+            <span>22%</span>
+            <span>8%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Pricing that scales from first revenue AI workflow to full GTM orchestration.</h2>
+          <p>Start with one team, then expand across sales, success, marketing, and operations.</p>
+        </div>
+        <div class="pricing">
+          <article class="price">
+            <h3>Starter</h3>
+            <div class="amount">$799/mo</div>
+            <p>For lean teams proving one revenue intelligence workflow.</p>
+            <ul>
+              <li>2 data sources</li>
+              <li>Account scoring</li>
+              <li>Weekly AI briefs</li>
+            </ul>
+            <a class="button secondary" href="#demo">Choose Starter</a>
+          </article>
+          <article class="price featured">
+            <h3>Growth</h3>
+            <div class="amount">$2,400/mo</div>
+            <p>For B2B SaaS teams coordinating sales, marketing, and success.</p>
+            <ul>
+              <li>8 data sources</li>
+              <li>Custom scoring models</li>
+              <li>AI playbooks and alerts</li>
+            </ul>
+            <a class="button" href="#demo">Choose Growth</a>
+          </article>
+          <article class="price">
+            <h3>Enterprise</h3>
+            <div class="amount">Custom</div>
+            <p>For teams with governed data, security, and workflow needs.</p>
+            <ul>
+              <li>Unlimited sources</li>
+              <li>Private model controls</li>
+              <li>Dedicated success team</li>
+            </ul>
+            <a class="button secondary" href="#demo">Contact sales</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" id="demo">
+      <div class="wrap final-inner">
+        <div>
+          <h2>Find the accounts most likely to grow, churn, or stall this quarter.</h2>
+          <p>Bring your GTM data together and give every revenue team the next best action.</p>
+        </div>
+        <a class="button" href="mailto:sales@signalforge.example">Book demo</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>SignalForge AI</span>
+      <span>Fake test website for Auto AB</span>
+    </div>
+  </footer>
+</body>
+</html>
