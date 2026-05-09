@@ -43,7 +43,7 @@ export function MetricsStrip() {
 }
 
 function MetricCard({ active, metric }) {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(metric.value);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -51,6 +51,7 @@ function MetricCard({ active, metric }) {
     const duration = 1100;
     const startedAt = performance.now();
     let frame = 0;
+    setCount(metric.value * 0.72);
 
     function tick(now) {
       const progress = Math.min((now - startedAt) / duration, 1);

@@ -2,21 +2,15 @@ import { useEffect, useState } from 'react';
 
 const phases = [
   { key: 'connecting', label: 'Connecting analytics...' },
-  { key: 'crawling', label: 'Scanning page...' },
-  { key: 'diagnosing', label: 'Finding pain points...' },
-  { key: 'generating', label: 'Drafting two variants...' },
-  { key: 'testing', label: 'Running simulated A/B test...' },
+  { key: 'crawling', label: 'Crawling DOM...' },
+  { key: 'diagnosing', label: 'Clustering drop-off signals...' },
+  { key: 'generating', label: 'Generating control/variant diff...' },
+  { key: 'testing', label: 'Streaming simulated conversions...' },
 ];
 
 export function ResultPanel({ phase, result, error, winner, onOpenReport, onReset }) {
   if (phase === 'idle') {
-    return (
-      <div className="result-panel empty-state">
-        <p className="panel-kicker">Ready</p>
-        <h2>Paste a URL to get started.</h2>
-        <p>auto-ab connects to your analytics, simulates visitor behavior, drafts two variants, and runs the A/B test for you.</p>
-      </div>
-    );
+    return null;
   }
 
   if (error) {
@@ -33,7 +27,7 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
   if (showProgress) {
     return (
       <div className="result-panel">
-        <p className="panel-kicker">Loop running</p>
+        <p className="panel-kicker">AI loop running</p>
         <div className="phase-list" aria-live="polite">
           {phases.map((item) => (
             <div className={`phase-row ${phase === item.key ? 'active' : ''} ${isComplete(phase, item.key) ? 'complete' : ''}`} key={item.key}>
@@ -49,6 +43,8 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
   if (!result) return null;
 
   const variants = result.variants || [];
+  const primaryVariant = variants[0] || result.variant;
+  const secondaryVariant = variants[1];
   const isTesting = phase === 'testing';
   const isDone = phase === 'done';
 
@@ -60,6 +56,11 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
           <h2>{result.url}</h2>
         </div>
         {isDone ? <span className="uplift-chip">Winner: Variant {winner}</span> : null}
+      </div>
+
+      <div className="result-section-title">
+        <p className="panel-kicker">Friction diagnosis</p>
+        <h3>Behavior signals converted into concrete website problems.</h3>
       </div>
 
       <div className="pain-list">
@@ -75,40 +76,146 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
         ))}
       </div>
 
-      <div className="diff-grid three">
-        <VariantCard label="A · Baseline" model={result.baseline} tone="warning" />
-        {variants.map((variant) => (
-          <VariantCard
-            key={variant.label}
-            label={`${variant.label} · ${variant.hypothesis}`}
-            model={variant}
-            tone="success"
-            uplift={isTesting ? <LiftBar target={variant.liftPct} /> : variant.uplift}
-            isWinner={isDone && winner === variant.label}
-          />
-        ))}
+      <div className="result-section-title compact">
+        <p className="panel-kicker">Generated website</p>
+        <h3>Original page vs AI-improved page.</h3>
       </div>
+
+      <WebsiteComparison
+        baseline={result.baseline}
+        isWinner={isDone && winner === primaryVariant?.label}
+        isTesting={isTesting}
+        uplift={primaryVariant ? (isTesting ? <LiftBar target={primaryVariant.liftPct} /> : primaryVariant.uplift) : null}
+        variant={primaryVariant}
+      />
+
+      {secondaryVariant ? (
+        <article className={`runner-up-card${isDone && winner === secondaryVariant.label ? ' is-winner' : ''}`}>
+          <div>
+            <p className="panel-kicker">Alternate route</p>
+            <strong>Variant {secondaryVariant.label}: {secondaryVariant.hypothesis}</strong>
+            <span>{secondaryVariant.headline}</span>
+          </div>
+          <span className="uplift-mini">{isTesting ? <LiftBar target={secondaryVariant.liftPct} /> : secondaryVariant.uplift}</span>
+        </article>
+      ) : null}
 
       {isDone ? (
         <div className="action-row">
-          <button className="button primary" onClick={onOpenReport} type="button">View benchmark report</button>
+          <button className="button primary" type="button">Generate next variant</button>
           <button className="button secondary" onClick={onReset} type="button">Run loop again</button>
+          <button className="button secondary" onClick={onOpenReport} type="button">Open benchmark report</button>
         </div>
       ) : null}
     </div>
   );
 }
 
-function VariantCard({ label, model, tone, uplift, isWinner }) {
+function WebsiteComparison({ baseline, variant, uplift, isTesting, isWinner }) {
+  const [viewMode, setViewMode] = useState('compare');
+  const controlSite = baseline?.site || DEFAULT_CONTROL_SITE;
+  const variantSite = variant?.site || buildVariantSite(variant);
+  const changes = variantSite.changes || variant?.changes || [];
+  const showOriginal = viewMode === 'compare' || viewMode === 'original';
+  const showGenerated = viewMode === 'compare' || viewMode === 'generated';
+
+  return (
+    <div className="website-result">
+      <div className="website-view-toggle" aria-label="Website comparison view">
+        <button className={viewMode === 'compare' ? 'active' : ''} onClick={() => setViewMode('compare')} type="button">Side by side</button>
+        <button className={viewMode === 'original' ? 'active' : ''} onClick={() => setViewMode('original')} type="button">View original</button>
+        <button className={viewMode === 'generated' ? 'active' : ''} onClick={() => setViewMode('generated')} type="button">View generated</button>
+      </div>
+
+      <div className={`website-compare ${viewMode !== 'compare' ? 'single' : ''}`}>
+        {showOriginal ? <WebsitePreview label="Original website2" site={controlSite} tone="control" /> : null}
+        {showGenerated ? <WebsitePreview isWinner={isWinner} label={`Generated Variant ${variant?.label || 'B'}`} site={variantSite} tone="variant" uplift={uplift} /> : null}
+      </div>
+
+      <div className="generated-changes">
+        <div>
+          <p className="panel-kicker">Generated page improvements</p>
+          <h3>{isTesting ? 'Testing generated treatment against the control.' : 'What changed in the generated page.'}</h3>
+        </div>
+        <ul>
+          {changes.map((change) => <li key={change}>{change}</li>)}
+        </ul>
+      </div>
+
+      <div className="next-loop-rail">
+        <span>01 Kept: outcome-led hero</span>
+        <span>02 Testing next: proof placement</span>
+        <span>03 Candidate: sticky mobile CTA</span>
+      </div>
+    </div>
+  );
+}
+
+function WebsitePreview({ label, site, tone, uplift, isWinner }) {
+  return (
+    <article className={`website-preview actual-site-preview ${tone}${isWinner ? ' is-winner' : ''}`}>
+      <div className="site-browser-bar">
+        <span>{label}</span>
+        {uplift ? <strong>{uplift} predicted lift</strong> : null}
+      </div>
+      <div className="site-preview-page">
+        <div className="site-preview-topbar">
+          <span><i />{site.brand}</span>
+          <nav><em>Agenda</em><em>Judges</em><em>{site.navCta}</em></nav>
+        </div>
+        <div className="site-preview-hero">
+          <div>
+            <span className="site-eyebrow">{site.eyebrow}</span>
+            <span className="preview-status">{site.status}</span>
+            <h2>{site.headline}</h2>
+            <p>{site.subheadline}</p>
+            <div className="site-preview-trust">
+              {site.trust.map((item) => <span key={item}>{item}</span>)}
+            </div>
+            <div className="site-preview-facts">
+              {site.facts.map((item) => <span className={item.tone || ''} key={item.label}><b>{item.value}</b>{item.label}</span>)}
+            </div>
+            <div className="site-preview-cta">
+              <button className="button primary" type="button">{site.primaryCta}</button>
+              <button className="button secondary" type="button">{site.secondaryCta}</button>
+            </div>
+          </div>
+          <aside className="site-poster-card">
+            <strong>{site.sideTitle}</strong>
+            <p>{site.sideCopy}</p>
+            <span>{site.posterTag}</span>
+          </aside>
+        </div>
+        <div className="site-preview-proof">
+          {site.proof.map((item) => <span key={item}>{item}</span>)}
+        </div>
+        <div className="site-preview-modules">
+          {site.modules.map((item) => <span key={item}>{item}</span>)}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function buildVariantSite(variant) {
+  return {
+    ...DEFAULT_VARIANT_SITE,
+    headline: variant?.headline || DEFAULT_VARIANT_SITE.headline,
+    changes: variant?.changes || DEFAULT_VARIANT_SITE.changes,
+  };
+}
+
+function VariantCard({ label, model, tone, uplift, isWinner, hypothesis }) {
   return (
     <article className={`variant-card ${tone}${isWinner ? ' is-winner' : ''}`}>
       <div className="variant-topline">
         <span>{label}</span>
         <strong>Score: {model.score}</strong>
       </div>
+      {hypothesis ? <p className="variant-hypothesis">{hypothesis}</p> : null}
       <blockquote>{model.headline}</blockquote>
       <p>CVR: {model.cvr}</p>
-      {uplift ? <span className="uplift-mini">{uplift}</span> : null}
+      {uplift ? <span className="uplift-mini">{uplift} predicted uplift</span> : null}
       {model.changes ? (
         <ul>
           {model.changes.map((change) => <li key={change}>{change}</li>)}
@@ -117,6 +224,51 @@ function VariantCard({ label, model, tone, uplift, isWinner }) {
     </article>
   );
 }
+
+const DEFAULT_CONTROL_SITE = {
+  brand: 'Codex Community Vietnam',
+  navCta: 'Join waitlist',
+  eyebrow: 'AI Hackathon - Weekend Build with Codex and CAR',
+  status: 'Closed · waitlist open',
+  headline: 'Build and ship an AI agent in 1 day.',
+  subheadline: 'A hands-on Ho Chi Minh City build session for engineers, founders, and operators learning practical agentic engineering with OpenAI Codex and Codex Auto Runner.',
+  primaryCta: 'Join waitlist',
+  secondaryCta: 'View Luma Event',
+  sideTitle: 'Codex Auto Runner',
+  sideCopy: 'Official Luma event poster dominates the hero while conversion actions compete below the fold.',
+  posterTag: 'Event Poster',
+  trust: ['175 builders going', 'Sold out fast', '3 build tracks'],
+  facts: [
+    { value: 'May 09', label: 'Event date' },
+    { value: 'HCMC', label: 'Local build session' },
+    { value: 'Closed', label: 'Registration status', tone: 'closed' },
+  ],
+  proof: ['1 day from concept to demo', '175 builders registered', '3 tracks'],
+  modules: ['Agenda below fold', 'Judges lower down', 'Footer repeats waitlist'],
+};
+
+const DEFAULT_VARIANT_SITE = {
+  brand: 'Codex Community Vietnam',
+  navCta: 'Join next cohort',
+  eyebrow: 'Next Codex sprint · HCMC waitlist now open',
+  status: 'This session is full · next cohort waitlist open',
+  headline: 'Join the next Codex sprint and ship your first AI agent in one day',
+  subheadline: 'Get early access to the next hands-on build day, Codex setup guide, CAR workflow templates, and team matching before registration opens.',
+  primaryCta: 'Join next cohort waitlist',
+  secondaryCta: 'See what builders ship',
+  sideTitle: 'Next cohort package',
+  sideCopy: 'Setup guide, CAR templates, track examples, and early invite now support one fallback conversion path.',
+  posterTag: 'Generated Variant',
+  trust: ['175 builders registered', 'Sold out fast', '3 build tracks', 'Judges from Scale, Depth, Impact'],
+  facts: [
+    { value: 'Next', label: 'Cohort waitlist' },
+    { value: 'HCMC', label: 'Local build session' },
+    { value: 'Open', label: 'Early invite status' },
+  ],
+  proof: ['Judge credibility moved up', 'Luma link demoted', 'Sticky mobile CTA planned'],
+  modules: ['Fallback CTA above fold', 'Proof moved before agenda', 'Secondary links demoted'],
+  changes: ['Closed status reframed into a next-cohort availability banner', 'Waitlist CTA moved above secondary Luma and GitHub links', 'Judge and builder proof promoted before agenda', 'Hero copy rewritten around shipping the first working agent', 'Sticky mobile waitlist CTA queued for the next loop'],
+};
 
 function LiftBar({ target }) {
   const [value, setValue] = useState(0);

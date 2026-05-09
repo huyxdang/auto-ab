@@ -15,7 +15,7 @@ export function CtaSection() {
     <section className="section cta-section" id="cta">
       <div className="container cta-card">
         <div>
-          <p className="eyebrow">API access</p>
+          <p className="eyebrow">Early access</p>
           <h2>Your next winning variant is one paste away.</h2>
           <p>Plug the loop into your site, connect real behavior data, and let the product decide what to improve next.</p>
         </div>
@@ -28,7 +28,7 @@ export function CtaSection() {
             placeholder="founder@company.com"
             type="email"
           />
-          <button className="button primary" disabled={!canSubmit} type="submit">Get API access</button>
+          <button className="button primary" disabled={!canSubmit} type="submit">Request early access</button>
           {submitted ? <p className="success-message">Request captured. We will follow up with access details.</p> : null}
         </form>
         <p className="stack-line">React · LLM judge · Supabase · REST API</p>

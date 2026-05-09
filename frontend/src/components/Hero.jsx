@@ -43,7 +43,7 @@ export function Hero({ ab, onComplete, onOpenReport }) {
           <p className="status-badge">System ready</p>
           <h1>Analyze. Inject. Optimize.</h1>
           <p className="hero-subtitle">
-            Paste a URL, connect your analytics. auto-ab simulates real visitor behavior, drafts two variants, and runs the A/B test before you ship anything.
+            Paste a URL and choose an analytics source. This sandbox simulates visitor behavior to show how auto-ab turns real signals into better website variants.
           </p>
         </div>
 
@@ -60,6 +60,7 @@ export function Hero({ ab, onComplete, onOpenReport }) {
                 placeholder="https://yoursite.com"
                 type="url"
                 inputMode="url"
+                title={url}
                 aria-invalid={showError}
                 aria-describedby={showError ? 'url-error' : undefined}
               />

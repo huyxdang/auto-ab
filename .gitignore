@@ -1,4 +1,9 @@
 backend/__pycache__
 backend/.env
+.env
+*.log
 website/variant-b.html
 website/final.html
+.agents/
+prompt.md
+PITCH.md

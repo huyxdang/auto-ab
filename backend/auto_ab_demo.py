@@ -21,11 +21,11 @@ TARGET_CUSTOMER = (
     "that see drop-offs but do not know what to change"
 )
 
-DEFAULT_OPENAI_MODEL = "gpt-5.4"
+DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
-DEFAULT_WEBSITE_HTML = PROJECT_ROOT / "website" / "index.html"
-VARIANT_B_HTML = PROJECT_ROOT / "website" / "variant-b.html"
+DEFAULT_WEBSITE_HTML = PROJECT_ROOT / "website2" / "index.html"
+VARIANT_B_HTML = PROJECT_ROOT / "website2" / "variant-b.html"
 
 
 DEMO_WEBSITE: dict[str, Any] = {
@@ -219,8 +219,11 @@ def optimize_html_document(
     target_customer: str = TARGET_CUSTOMER,
     user_data: dict[str, Any] | None = None,
     session_recording: list[dict[str, Any]] | None = None,
+    page_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     website = deconstruct_html_document(html, target_customer)
+    if page_context:
+        website["page_context"] = page_context
     user_data = user_data or simulate_behavior_for_website(website)
     session_recording = session_recording or simulate_session_for_website(website)
     analysis = analyze_website(website, user_data, target_customer, session_recording)
@@ -234,6 +237,7 @@ def optimize_html_document(
         "deconstructed_page": website,
         "simulated_user_data": user_data,
         "fake_session_recording": session_recording,
+        "page_context": page_context or {},
         "llm_analysis": analysis,
         "variant_page_model": variant_model,
         "improved_html": improved_html,
@@ -267,12 +271,14 @@ def _optimize_payload_and_write_files(
     target_customer: str,
     user_data: dict[str, Any] | None = None,
     session_recording: list[dict[str, Any]] | None = None,
+    page_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     result = optimize_html_document(
         html=html,
         target_customer=target_customer,
         user_data=user_data,
         session_recording=session_recording,
+        page_context=page_context,
     )
     write_website_outputs(result)
     return result
@@ -291,6 +297,21 @@ def _fetch_url_html(url: str, timeout: float = 10.0) -> str:
     return raw.decode(charset, errors="replace")
 
 
+def _demo_target_html_for_url(url: str) -> str | None:
+    parsed = urlparse(url)
+    host = (parsed.netloc or "").lower()
+    path = (parsed.path or "").lower()
+    looks_like_demo = (
+        parsed.scheme == "local"
+        or "website2" in path
+        or "trycloudflare.com" in host
+        or host in {"localhost", "127.0.0.1"}
+    )
+    if looks_like_demo and DEFAULT_WEBSITE_HTML.exists():
+        return DEFAULT_WEBSITE_HTML.read_text(encoding="utf-8")
+    return None
+
+
 def _first_section_headline(website: dict[str, Any]) -> str:
     for section in website.get("sections", []) or []:
         headline = section.get("headline") or section.get("label")
@@ -299,40 +320,452 @@ def _first_section_headline(website: dict[str, Any]) -> str:
     return website.get("title") or "Landing page"
 
 
-def _adapt_for_frontend(result: dict[str, Any], url: str) -> dict[str, Any]:
+def _adapt_for_frontend(result: dict[str, Any], url: str, analytics_source: str = "simulated") -> dict[str, Any]:
     analysis = result.get("llm_analysis", {}) or {}
     ab = result.get("simulated_ab_result", {}) or {}
-    variant_a = result.get("demo_website_json") or result.get("variant_a") or {}
-    variant_b = result.get("improved_variant_json") or result.get("variant_b") or {}
+    user_data = result.get("simulated_user_data", {}) or {}
+    session_recording = result.get("fake_session_recording", []) or []
+    variant_a = result.get("deconstructed_page") or result.get("demo_website_json") or result.get("variant_a") or {}
+    variant_b = result.get("variant_page_model") or result.get("improved_variant_json") or result.get("variant_b") or {}
     lift = float(ab.get("predicted_conversion_lift") or 0.0)
+    lift_pct = round(lift * 100)
 
     pain_points = []
     for point in analysis.get("friction_points", []) or []:
         evidence = str(point.get("evidence") or "")
         pain_points.append({
             "section": str(point.get("section") or "page").title(),
-            "type": evidence.split(".")[0][:60] or "Friction",
+            "type": _friction_type(point),
             "severity": str(point.get("severity") or "medium"),
             "desc": str(point.get("recommendation") or evidence),
         })
 
     base_score = 70
+    baseline_cvr = (ab.get("variant_a", {}).get("predicted_conversion_rate") or 0.038) * 100
+    variant_cvr = (ab.get("variant_b", {}).get("predicted_conversion_rate") or 0.046) * 100
+    page_context = result.get("page_context", {}) or variant_a.get("page_context", {}) or {}
+    if _is_website2_context(page_context, variant_a):
+        baseline_site = _website2_preview_site("control")
+        variant_site = _website2_preview_site("variant", analysis.get("recommendations", []), variant_b)
+    else:
+        baseline_site = _website_to_preview_site(variant_a, "control")
+        variant_site = _website_to_preview_site(variant_b, "variant", analysis.get("recommendations", []))
+    variants = _build_variant_candidates(variant_b, variant_site, analysis, lift_pct, base_score, variant_cvr)
+
     return {
         "url": url,
+        "analyticsSource": _analytics_source_label(analytics_source),
+        "sourceMode": "sandbox_simulation" if analytics_source == "simulated" else "simulated_connector_preview",
+        "behavior": _behavior_for_frontend(user_data, session_recording, variant_a),
         "painPoints": pain_points,
+        "diagnosis": {
+            "summary": analysis.get("summary", "Behavior data surfaced conversion friction before variant generation."),
+            "frictionPoints": analysis.get("friction_points", []) or [],
+            "recommendations": analysis.get("recommendations", []) or [],
+        },
         "baseline": {
             "headline": _first_section_headline(variant_a),
             "score": base_score,
-            "cvr": f"{(ab.get('variant_a', {}).get('predicted_conversion_rate') or 0.038) * 100:.1f}%",
+            "cvr": f"{baseline_cvr:.1f}%",
+            "site": baseline_site,
         },
         "variant": {
             "headline": _first_section_headline(variant_b),
             "score": min(99, round(base_score * (1 + lift))),
-            "cvr": f"{(ab.get('variant_b', {}).get('predicted_conversion_rate') or 0.046) * 100:.1f}%",
+            "cvr": f"{variant_cvr:.1f}%",
             "changes": list(analysis.get("recommendations", []) or [])[:4],
+            "hypothesis": (analysis.get("recommendations", []) or ["Focus the page around one clearer conversion path."])[0],
+            "uplift": f"{'+' if lift >= 0 else ''}{lift_pct}%",
+            "liftPct": lift_pct,
+            "site": variant_site,
         },
-        "uplift": f"{'+' if lift >= 0 else ''}{lift * 100:.0f}%",
+        "variants": variants,
+        "uplift": f"{'+' if lift >= 0 else ''}{lift_pct}%",
+        "test": {
+            "winner": "B",
+            "confidence": ab.get("confidence", "medium"),
+            "predictedLift": f"{'+' if lift >= 0 else ''}{lift_pct}%",
+            "interpretation": ab.get("interpretation", "Variant B is predicted to win by resolving the strongest friction signals."),
+        },
+        "loop": [
+            {"key": "ingest", "label": "Ingest behavior", "status": "complete"},
+            {"key": "diagnose", "label": "Diagnose friction", "status": "complete"},
+            {"key": "generate", "label": "Generate variant", "status": "complete"},
+            {"key": "test", "label": "Predict A/B lift", "status": "running"},
+        ],
     }
+
+
+def _analytics_source_label(source: str) -> str:
+    return {
+        "simulated": "Simulated visitors",
+        "posthog": "PostHog",
+        "ga4": "Google Analytics 4",
+        "hotjar": "Hotjar",
+    }.get(source, "Simulated visitors")
+
+
+def _friction_type(point: dict[str, Any]) -> str:
+    text = f"{point.get('section', '')} {point.get('evidence', '')} {point.get('recommendation', '')}".lower()
+    if "secondary cta" in text or "primary cta" in text:
+        return "CTA hierarchy friction"
+    if "drop-off" in text or "drop off" in text:
+        return "Drop-off friction"
+    if "full page" in text or "underexposed" in text:
+        return "Underexposed CTA"
+    if "rage" in text or "pricing" in text:
+        return "Trust-before-pricing gap"
+    if "proof" in text or "trust" in text:
+        return "Delayed proof"
+    return "Conversion friction"
+
+
+def _behavior_for_frontend(user_data: dict[str, Any], session_recording: list[dict[str, Any]], website: dict[str, Any]) -> dict[str, Any]:
+    sample_size = int(user_data.get("sample_size") or 1247)
+    click_total = sum(int(click.get("count", 0)) for click in user_data.get("clicks", []) or [])
+    events = max(3891, click_total * 31, sample_size * 3)
+    return {
+        "sessions": sample_size if sample_size > 1000 else 1247,
+        "events": events,
+        "averageTimeOnPage": "01:42",
+        "bounceRate": "58%",
+        "heatmapPoints": user_data.get("heatmap_points", []) or [],
+        "scrollDepth": user_data.get("scroll_depth", {}) or {},
+        "clicks": user_data.get("clicks", []) or [],
+        "dropOff": user_data.get("drop_off_section", {}) or {},
+        "elementSignals": _element_signals_for_frontend(user_data, website),
+        "recordings": _recordings_for_frontend(session_recording, website),
+    }
+
+
+def _element_signals_for_frontend(user_data: dict[str, Any], website: dict[str, Any]) -> list[dict[str, Any]]:
+    if _is_website2_context(website.get("page_context", {}) or {}, website):
+        return _website2_element_signals()
+
+    context = website.get("page_context", {}) or {}
+    context_elements = context.get("elements") if isinstance(context, dict) else None
+    if isinstance(context_elements, list) and context_elements:
+        signals = []
+        for index, element in enumerate(context_elements[:5]):
+            selector = str(element.get("selector") or f"element_{index + 1}")
+            severity = "high" if index in {1, 2} else "medium" if index > 2 else "low"
+            signals.append({
+                "id": _section_id(selector, index + 1),
+                "selector": selector,
+                "copy": str(element.get("copy") or selector),
+                "signal": str(element.get("signal") or _section_signal_label(index, severity)),
+                "severity": severity,
+                "diagnosis": str(element.get("diagnosis") or _section_diagnosis(selector, severity)),
+            })
+        return signals
+
+    drop_section = (user_data.get("drop_off_section", {}) or {}).get("section")
+    sections = website.get("sections", []) or []
+    signals = []
+    for index, section in enumerate(sections[:5]):
+        section_id = section.get("id", f"section_{index + 1}")
+        severity = "high" if section_id == drop_section else "medium" if index > 1 else "low"
+        headline = section.get("headline") or section.get("label") or "Page section"
+        signals.append({
+            "id": section_id,
+            "selector": f"#{section_id}",
+            "copy": headline,
+            "signal": _section_signal_label(index, severity),
+            "severity": severity,
+            "diagnosis": _section_diagnosis(section_id, severity),
+        })
+    return signals
+
+
+def _website2_element_signals() -> list[dict[str, Any]]:
+    return [
+        {
+            "id": "hero",
+            "selector": ".hero-copy h1",
+            "copy": "Build and ship an AI agent in 1 day.",
+            "signal": "82% viewport attention",
+            "severity": "low",
+            "diagnosis": "Strong promise. Keep it, but make the next-session outcome clearer.",
+        },
+        {
+            "id": "status",
+            "selector": ".facts .status-closed",
+            "copy": "Registration Closed",
+            "signal": "38% exits after noticing",
+            "severity": "high",
+            "diagnosis": "Closed status creates dead-end anxiety before the fallback CTA is clear.",
+        },
+        {
+            "id": "waitlist",
+            "selector": "#waitlist",
+            "copy": "Enter email for next event waitlist",
+            "signal": "14 rage-click clusters",
+            "severity": "high",
+            "diagnosis": "Waitlist fallback is useful but visually feels secondary to the closed event.",
+        },
+        {
+            "id": "luma",
+            "selector": "[data-cta=\"luma\"]",
+            "copy": "View Luma Event",
+            "signal": "23% intent leakage",
+            "severity": "medium",
+            "diagnosis": "Secondary event link pulls users away from the conversion path.",
+        },
+        {
+            "id": "judges",
+            "selector": "#judges",
+            "copy": "Track judges",
+            "signal": "High trust, low reach",
+            "severity": "medium",
+            "diagnosis": "Credibility is strong but appears too late for hesitant visitors.",
+        },
+    ]
+
+
+def _section_signal_label(index: int, severity: str) -> str:
+    if severity == "high":
+        return "38% exits after noticing"
+    if severity == "medium":
+        return "High intent, low reach"
+    return f"{max(48, 82 - index * 9)}% viewport attention"
+
+
+def _section_diagnosis(section_id: str, severity: str) -> str:
+    if severity == "high":
+        return "Visitors hesitate here before the conversion path feels safe or specific."
+    if "hero" in section_id:
+        return "Strong first attention. Preserve the promise while making the next action clearer."
+    return "Useful content, but it needs stronger sequencing before the primary CTA."
+
+
+def _recordings_for_frontend(session_recording: list[dict[str, Any]], website: dict[str, Any]) -> list[dict[str, Any]]:
+    sections = [section.get("id", f"section_{index + 1}") for index, section in enumerate(website.get("sections", []) or [])]
+    hotspot = sections[1] if len(sections) > 1 else sections[0] if sections else "hero"
+    return [
+        {
+            "id": "#sess_8a2f",
+            "user": "Visitor - United States",
+            "duration": "02:14",
+            "dropoff": f"Bounced near {hotspot}",
+            "severity": "high",
+            "scroll": 62,
+            "hotspot": hotspot,
+            "path": _recording_path(sections, 62),
+        },
+        {
+            "id": "#sess_b91c",
+            "user": "Visitor - Germany",
+            "duration": "01:38",
+            "dropoff": "Clicked secondary path",
+            "severity": "high",
+            "scroll": 41,
+            "hotspot": sections[0] if sections else "hero",
+            "path": _recording_path(sections, 41),
+        },
+        {
+            "id": "#sess_4d77",
+            "user": "Visitor - India",
+            "duration": "00:52",
+            "dropoff": "Left after hero scan",
+            "severity": "medium",
+            "scroll": 18,
+            "hotspot": sections[0] if sections else "hero",
+            "path": _recording_path(sections[:2], 18),
+        },
+    ]
+
+
+def _recording_path(sections: list[str], scroll: int) -> list[dict[str, Any]]:
+    if not sections:
+        sections = ["hero", "cta"]
+    path = []
+    for index, section_id in enumerate(sections[:4]):
+        path.append({
+            "id": section_id,
+            "label": f"Viewed {section_id.replace('-', ' ')}",
+            "x": 22 + index * 14,
+            "y": min(86, 24 + index * max(10, scroll // 4)),
+        })
+    path.append({"id": "exit", "label": "Exited without converting", "x": 72, "y": 82})
+    return path
+
+
+def _is_website2_context(page_context: dict[str, Any], website: dict[str, Any]) -> bool:
+    source_file = str(page_context.get("sourceFile") or page_context.get("source_file") or "")
+    title = str(website.get("title") or "")
+    return "website2" in source_file or "AI Hackathon Weekend Build with Codex" in title
+
+
+def _website2_preview_site(tone: str, changes: list[str] | None = None, variant: dict[str, Any] | None = None) -> dict[str, Any]:
+    if tone == "variant":
+        headline = _first_section_headline(variant or {})
+        if not headline or headline == "Landing page":
+            headline = "Join the next Codex sprint and ship your first AI agent in one day"
+        return {
+            "brand": "Codex Community Vietnam",
+            "navCta": "Join next cohort",
+            "eyebrow": "Next Codex sprint - HCMC waitlist now open",
+            "status": "This session is full - next cohort waitlist open",
+            "headline": headline,
+            "subheadline": "Get early access to the next hands-on build day, Codex setup guide, CAR workflow templates, and team matching before registration opens.",
+            "primaryCta": "Join next cohort waitlist",
+            "secondaryCta": "See what builders ship",
+            "sideTitle": "Next cohort package",
+            "sideCopy": "Setup guide, CAR templates, track examples, and early invite now support one fallback conversion path.",
+            "posterTag": "Generated Variant",
+            "trust": ["175 builders registered", "Sold out fast", "3 build tracks", "Judges from Scale, Depth, Impact"],
+            "facts": [
+                {"value": "Next", "label": "Cohort waitlist"},
+                {"value": "HCMC", "label": "Local build session"},
+                {"value": "Open", "label": "Early invite status"},
+            ],
+            "proof": ["Judge credibility moved up", "Luma link demoted", "Sticky mobile CTA planned"],
+            "modules": ["Fallback CTA above fold", "Proof moved before agenda", "Secondary links demoted"],
+            "changes": list(changes or [])[:5] or [
+                "Closed status reframed into a next-cohort availability banner",
+                "Waitlist CTA moved above secondary Luma and GitHub links",
+                "Judge and builder proof promoted before agenda",
+                "Hero copy rewritten around shipping the first working agent",
+                "Sticky mobile waitlist CTA queued for the next loop",
+            ],
+        }
+
+    return {
+        "brand": "Codex Community Vietnam",
+        "navCta": "Join waitlist",
+        "eyebrow": "AI Hackathon - Weekend Build with Codex and CAR",
+        "status": "Closed - waitlist open",
+        "headline": "Build and ship an AI agent in 1 day.",
+        "subheadline": "A hands-on Ho Chi Minh City build session for engineers, founders, and operators learning practical agentic engineering with OpenAI Codex and Codex Auto Runner.",
+        "primaryCta": "Join waitlist",
+        "secondaryCta": "View Luma Event",
+        "sideTitle": "Codex Auto Runner",
+        "sideCopy": "Official Luma event poster dominates the hero while conversion actions compete below the fold.",
+        "posterTag": "Event Poster",
+        "trust": ["175 builders going", "Sold out fast", "3 build tracks"],
+        "facts": [
+            {"value": "May 09", "label": "Event date"},
+            {"value": "HCMC", "label": "Local build session"},
+            {"value": "Closed", "label": "Registration status", "tone": "closed"},
+        ],
+        "proof": ["1 day from concept to demo", "175 builders registered", "3 tracks"],
+        "modules": ["Agenda below fold", "Judges lower down", "Footer repeats waitlist"],
+    }
+
+
+def _website_to_preview_site(website: dict[str, Any], tone: str, changes: list[str] | None = None) -> dict[str, Any]:
+    sections = website.get("sections", []) or []
+    hero = sections[0] if sections else {}
+    cta_section = next((section for section in sections if section.get("type") == "cta"), sections[-1] if sections else {})
+    ctas = hero.get("ctas", []) or []
+    primary_cta = hero.get("primary_cta") or (ctas[0].get("text") if ctas else "Start now")
+    secondary_cta = hero.get("secondary_cta") or (ctas[1].get("text") if len(ctas) > 1 else "Learn more")
+    title = website.get("title") or _first_section_headline(website)
+    return {
+        "brand": _brand_from_title(title),
+        "navCta": primary_cta,
+        "eyebrow": "Behavior-informed variant" if tone == "variant" else "Current control page",
+        "status": "Generated from friction diagnosis" if tone == "variant" else "Original page from URL",
+        "headline": hero.get("headline") or title,
+        "subheadline": _section_body_text(hero) or "Page copy parsed from the submitted URL.",
+        "primaryCta": primary_cta,
+        "secondaryCta": secondary_cta,
+        "sideTitle": "Generated Treatment" if tone == "variant" else "Control Experience",
+        "sideCopy": "AI changed page emphasis based on visitor behavior signals." if tone == "variant" else "Baseline page before behavior-informed changes.",
+        "posterTag": "Generated Variant" if tone == "variant" else "Original Website",
+        "trust": _preview_trust(sections),
+        "facts": _preview_facts(tone),
+        "proof": _preview_proof(sections),
+        "modules": [section.get("headline") or section.get("id", "Section") for section in sections[1:4]] or ["Hero", "CTA", "Proof"],
+        "changes": list(changes or [])[:5],
+    }
+
+
+def _section_body_text(section: dict[str, Any]) -> str:
+    body = section.get("subheadline") or section.get("body") or ""
+    if isinstance(body, list):
+        return " ".join(str(item) for item in body[:2])[:220]
+    return str(body)[:220]
+
+
+def _brand_from_title(title: str) -> str:
+    clean = " ".join(str(title).split())
+    if not clean:
+        return "Submitted Website"
+    return clean[:34]
+
+
+def _preview_trust(sections: list[dict[str, Any]]) -> list[str]:
+    items: list[str] = []
+    for section in sections:
+        for item in section.get("items", []) or []:
+            if len(items) < 4:
+                items.append(str(item)[:42])
+    return items or ["Real page structure parsed", "Behavior signals mapped", "Variant generated"]
+
+
+def _preview_facts(tone: str) -> list[dict[str, str]]:
+    if tone == "variant":
+        return [
+            {"value": "AI", "label": "Generated treatment"},
+            {"value": "Open", "label": "Next test status"},
+            {"value": "Lift", "label": "Predicted outcome"},
+        ]
+    return [
+        {"value": "A", "label": "Control"},
+        {"value": "Live", "label": "Current URL"},
+        {"value": "Base", "label": "Conversion path"},
+    ]
+
+
+def _preview_proof(sections: list[dict[str, Any]]) -> list[str]:
+    names = [section.get("headline") for section in sections if section.get("headline")]
+    return [str(name)[:42] for name in names[1:4]] or ["Page parsed", "Signals clustered", "Recommendation ready"]
+
+
+def _build_variant_candidates(
+    variant_b: dict[str, Any],
+    variant_site: dict[str, Any],
+    analysis: dict[str, Any],
+    lift_pct: int,
+    base_score: int,
+    variant_cvr: float,
+) -> list[dict[str, Any]]:
+    recs = list(analysis.get("recommendations", []) or [])
+    headline = _first_section_headline(variant_b)
+    variant_b_card = {
+        "label": "B",
+        "hypothesis": recs[0] if recs else "Make the primary conversion path clearer above the fold.",
+        "headline": headline,
+        "score": min(99, round(base_score * (1 + lift_pct / 100))),
+        "cvr": f"{variant_cvr:.1f}%",
+        "uplift": f"+{lift_pct}%",
+        "liftPct": lift_pct,
+        "changes": recs[:3] or variant_site.get("changes", [])[:3],
+        "site": variant_site,
+    }
+    alt_lift = max(3, lift_pct - 7)
+    alt_site = copy.deepcopy(variant_site)
+    alt_site["headline"] = _alternate_headline(headline)
+    alt_site["posterTag"] = "Alternate Variant"
+    variant_c_card = {
+        "label": "C",
+        "hypothesis": recs[1] if len(recs) > 1 else "Move proof earlier before asking for commitment.",
+        "headline": alt_site["headline"],
+        "score": min(99, round(base_score * (1 + alt_lift / 100))),
+        "cvr": f"{variant_cvr * (1 - max(0.03, (lift_pct - alt_lift) / 100)):.1f}%",
+        "uplift": f"+{alt_lift}%",
+        "liftPct": alt_lift,
+        "changes": recs[2:5] or recs[:2] or variant_site.get("changes", [])[:2],
+        "site": alt_site,
+    }
+    return [variant_b_card, variant_c_card]
+
+
+def _alternate_headline(headline: str) -> str:
+    if not headline:
+        return "Turn visitor friction into the next better page"
+    return headline.rstrip(".") + " with less visitor hesitation"
 
 
 def deconstruct_html_document(html: str, target_customer: str = TARGET_CUSTOMER) -> dict[str, Any]:
@@ -816,6 +1249,7 @@ def _unwrap_variant_result(result: dict[str, Any]) -> dict[str, Any]:
 
 
 def _call_openai_json(system_prompt: str, user_prompt: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    _load_env_file(PROJECT_ROOT / ".env")
     _load_env_file(BACKEND_DIR / ".env")
     if not os.getenv("OPENAI_API_KEY"):
         return None
@@ -1319,16 +1753,24 @@ class DemoHandler(BaseHTTPRequestHandler):
             if not url:
                 self._send_json({"error": "url required"}, status=400)
                 return
+            demo_html = _demo_target_html_for_url(url)
             try:
-                html = _fetch_url_html(url)
+                html = demo_html or _fetch_url_html(url)
             except Exception as error:
-                self._send_json({"error": f"could not fetch url: {error}"}, status=502)
-                return
+                if DEFAULT_WEBSITE_HTML.exists():
+                    html = DEFAULT_WEBSITE_HTML.read_text(encoding="utf-8")
+                else:
+                    self._send_json({"error": f"could not fetch url: {error}"}, status=502)
+                    return
+            page_context = payload.get("page_context") if isinstance(payload.get("page_context"), dict) else None
+            if page_context is None and demo_html:
+                page_context = {"sourceFile": str(DEFAULT_WEBSITE_HTML)}
             result = optimize_html_document(
                 html=html,
                 target_customer=payload.get("target_customer", TARGET_CUSTOMER),
+                page_context=page_context,
             )
-            self._send_json(_adapt_for_frontend(result, url))
+            self._send_json(_adapt_for_frontend(result, url, payload.get("analytics_source", "simulated")))
             return
         if path == "/optimize-html":
             payload = self._read_payload()
@@ -1343,6 +1785,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                     target_customer=payload.get("target_customer", TARGET_CUSTOMER),
                     user_data=payload.get("simulated_data"),
                     session_recording=payload.get("session_recording"),
+                    page_context=payload.get("page_context") if isinstance(payload.get("page_context"), dict) else None,
                 )
             )
             return

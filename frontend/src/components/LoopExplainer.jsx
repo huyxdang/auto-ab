@@ -23,9 +23,10 @@ const steps = [
   },
 ];
 
-export function LoopExplainer() {
+export function LoopExplainer({ phase }) {
   const sectionRef = useRef(null);
   const [visible, setVisible] = useState(false);
+  const activeIndex = getActiveIndex(phase);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -51,7 +52,7 @@ export function LoopExplainer() {
         </div>
         <div className="timeline">
           {steps.map((step, index) => (
-            <article className="timeline-card" key={step.title} style={{ '--delay': `${index * 120}ms` }}>
+            <article className={`timeline-card ${activeIndex === index ? 'is-active' : ''}`} key={step.title} style={{ '--delay': `${index * 120}ms` }}>
               <span className="step-number">{step.number}</span>
               <h3>{step.title}</h3>
               <p>{step.description}</p>
@@ -61,4 +62,12 @@ export function LoopExplainer() {
       </div>
     </section>
   );
+}
+
+function getActiveIndex(phase) {
+  if (['connected', 'crawling'].includes(phase)) return 0;
+  if (phase === 'diagnosing') return 1;
+  if (phase === 'generating') return 2;
+  if (['testing', 'done'].includes(phase)) return 3;
+  return -1;
 }

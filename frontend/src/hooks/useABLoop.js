@@ -1,6 +1,43 @@
 import { useState } from 'react';
 import { mockResults } from '../data/mockResults.js';
 
+const WEBSITE2_CONTEXT = {
+  sourceFile: 'website2/index.html',
+  goal: 'Convert sold-out event visitors into next cohort waitlist signups.',
+  elements: [
+    {
+      selector: '.hero-copy h1',
+      copy: 'Build and ship an AI agent in 1 day.',
+      signal: '82% viewport attention',
+      diagnosis: 'Strong promise, but can be sharpened around next-session outcome.',
+    },
+    {
+      selector: '.facts .status-closed',
+      copy: 'Registration Closed',
+      signal: '38% exits after noticing',
+      diagnosis: 'Closed status creates dead-end anxiety before fallback CTA is clear.',
+    },
+    {
+      selector: '#waitlist',
+      copy: 'Enter email for next event waitlist',
+      signal: '14 rage-click clusters',
+      diagnosis: 'Waitlist fallback is useful but visually feels secondary to the closed event.',
+    },
+    {
+      selector: '[data-cta="luma"]',
+      copy: 'View Luma Event',
+      signal: '23% intent leakage',
+      diagnosis: 'Secondary event link pulls users away from conversion.',
+    },
+    {
+      selector: '#judges',
+      copy: 'Track judges',
+      signal: 'High trust, low reach',
+      diagnosis: 'Credibility is strong but appears too late for hesitant visitors.',
+    },
+  ],
+};
+
 export function useABLoop() {
   const [phase, setPhase] = useState('idle');
   const [result, setResult] = useState(null);
@@ -15,7 +52,7 @@ export function useABLoop() {
     setWinner(null);
     setTarget({ url, source });
 
-    const fetchPromise = getAnalysis(url).catch(() => ({ ...mockResults, url }));
+    const fetchPromise = getAnalysis(url, source).catch(() => ({ ...mockResults, url, analyticsSource: source }));
     setPendingFetch(() => fetchPromise);
 
     setPhase('connecting');
@@ -54,17 +91,19 @@ export function useABLoop() {
   return { phase, result, error, winner, target, runConnect, runAnalysis, reset };
 }
 
-async function getAnalysis(url) {
+async function getAnalysis(url, source) {
   const response = await fetch('/api/analyze-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, analytics_source: source, page_context: WEBSITE2_CONTEXT }),
   });
   if (!response.ok) throw new Error('API error');
   return response.json();
 }
 
 function expandToTwoVariants(data) {
+  if (Array.isArray(data.variants) && data.variants.length >= 2) return data;
+
   const recs = data.variant?.changes || [];
   const liftPct = parseFloat((data.uplift || '+0%').replace(/[^0-9.\-]/g, '')) || 0;
 

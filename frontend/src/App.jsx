@@ -15,9 +15,14 @@ export default function App() {
   useEffect(() => {
     if (ab.phase === 'connected' && view !== 'behavior') {
       setView('behavior');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [ab.phase, view]);
+
+  useEffect(() => {
+    if (ab.phase === 'done' && ab.result) {
+      setLastResult({ ...ab.result, winner: ab.winner });
+    }
+  }, [ab.phase, ab.result, ab.winner]);
 
   function openReport() {
     setView('report');
@@ -30,8 +35,6 @@ export default function App() {
   }
 
   function startAI() {
-    setView('home');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     ab.runAnalysis();
   }
 
@@ -44,11 +47,11 @@ export default function App() {
             <a className="active" href="#hero">Platform</a>
             <a href="#metrics">Signals</a>
             <a href="#how">Loop</a>
-            <a href="#cta">API</a>
+            <a href="#cta">Waitlist</a>
           </nav>
           <div className="nav-actions">
-            <a className="nav-icon" href="#metrics" aria-label="Open monitoring panel">MON</a>
-            <a className="button primary small" href="#hero">Deploy Experiment</a>
+            <a className="nav-icon" href="#metrics" aria-label="Open metrics panel">Metrics</a>
+            <a className="button primary small" href="#hero">Run Demo</a>
           </div>
         </div>
       </header>
@@ -57,11 +60,11 @@ export default function App() {
           <>
             <Hero ab={ab} onComplete={setLastResult} onOpenReport={openReport} />
             <MetricsStrip />
-            <LoopExplainer />
+            <LoopExplainer phase={ab.phase} />
             <CtaSection />
           </>
         ) : view === 'behavior' ? (
-          <BehaviorPage target={ab.target} onStart={startAI} onBack={returnHome} />
+          <BehaviorPage ab={ab} onStart={startAI} onBack={returnHome} onOpenReport={openReport} />
         ) : (
           <BenchmarkReport result={lastResult} onBack={returnHome} />
         )}
@@ -73,10 +76,10 @@ export default function App() {
             <p>Autonomous website optimization powered by real behavior signals.</p>
           </div>
           <div className="footer-links">
-            <a href="#hero">Documentation</a>
-            <a href="#how">API Reference</a>
-            <a href="#metrics">Status</a>
-            <a href="#cta">Privacy Policy</a>
+            <a href="#hero">Platform</a>
+            <a href="#metrics">Metrics</a>
+            <a href="#how">Loop</a>
+            <a href="#cta">Early Access</a>
           </div>
         </div>
       </footer>

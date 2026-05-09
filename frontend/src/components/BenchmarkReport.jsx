@@ -4,6 +4,19 @@ import { benchmarkReport } from '../data/benchmarkReport.js';
 export function BenchmarkReport({ result, onBack }) {
   const report = benchmarkReport;
   const sourceUrl = result?.url || report.url;
+  const winner = result?.winner || 'B';
+  const winningVariant = result?.variants?.find((variant) => variant.label === winner) || result?.variants?.[0];
+  const scoreBefore = result?.baseline?.score || report.scoreBefore;
+  const scoreAfter = winningVariant?.score || report.scoreAfter;
+  const projectedLift = winningVariant?.uplift || result?.uplift || report.projectedLift;
+  const previewSite = winningVariant
+    ? {
+        ...report.generatedSite,
+        headline: winningVariant.headline,
+        subheadline: winningVariant.hypothesis || report.generatedSite.subheadline,
+        modules: winningVariant.changes?.length ? winningVariant.changes : report.generatedSite.modules,
+      }
+    : report.generatedSite;
 
   return (
     <section className="report-page">
@@ -11,7 +24,7 @@ export function BenchmarkReport({ result, onBack }) {
         <div className="report-toolbar">
           <button className="button secondary" onClick={onBack} type="button">
             <ArrowLeft size={17} aria-hidden="true" />
-            Command center
+            Back to loop
           </button>
           <span>auto-ab benchmark report</span>
         </div>
@@ -19,7 +32,7 @@ export function BenchmarkReport({ result, onBack }) {
         <header className="report-hero">
           <div>
             <p className="status-badge">Experiment complete</p>
-            <h1>Benchmark finished. Variant B is ready to ship.</h1>
+            <h1>Benchmark finished. Variant {winner} is ready for the next test.</h1>
             <p>{report.verdict}</p>
             <div className="report-target">
               <span>Target</span>
@@ -34,16 +47,16 @@ export function BenchmarkReport({ result, onBack }) {
         </header>
 
         <div className="score-grid">
-          <ScoreCard label="Before score" value={report.scoreBefore} tone="muted" />
-          <ScoreCard label="After score" value={report.scoreAfter} tone="primary" />
-          <ScoreCard label="Projected lift" value={report.projectedLift} tone="primary" />
+          <ScoreCard label="Before score" value={scoreBefore} tone="muted" />
+          <ScoreCard label="After score" value={scoreAfter} tone="primary" />
+          <ScoreCard label="Projected lift" value={projectedLift} tone="primary" />
           <ScoreCard label="Confidence" value={report.confidence} tone="primary" />
         </div>
 
         <section className="report-section">
           <div className="report-section-heading">
             <p className="eyebrow">Benchmark metrics</p>
-            <h2>Conversion path recovers once closed registration gets a fallback action.</h2>
+            <h2>Conversion path improves once behavior friction becomes a generated treatment.</h2>
           </div>
           <div className="kpi-grid">
             {report.kpis.map((kpi) => (
@@ -80,7 +93,7 @@ export function BenchmarkReport({ result, onBack }) {
             </div>
           </div>
 
-          <GeneratedSitePreview site={report.generatedSite} />
+          <GeneratedSitePreview site={previewSite} />
         </section>
 
         <section className="next-experiment">
