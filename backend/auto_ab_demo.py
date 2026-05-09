@@ -13,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 
 TARGET_CUSTOMER = (
@@ -275,6 +276,63 @@ def _optimize_payload_and_write_files(
     )
     write_website_outputs(result)
     return result
+
+
+def _fetch_url_html(url: str, timeout: float = 10.0) -> str:
+    import ssl
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("URL must start with http:// or https://")
+    req = Request(url, headers={"User-Agent": "auto-ab/1.0 (+https://github.com/huyxdang/auto-ab)"})
+    ctx = ssl._create_unverified_context()
+    with urlopen(req, timeout=timeout, context=ctx) as response:
+        raw = response.read(2_000_000)
+        charset = response.headers.get_content_charset() or "utf-8"
+    return raw.decode(charset, errors="replace")
+
+
+def _first_section_headline(website: dict[str, Any]) -> str:
+    for section in website.get("sections", []) or []:
+        headline = section.get("headline") or section.get("label")
+        if headline:
+            return str(headline)
+    return website.get("title") or "Landing page"
+
+
+def _adapt_for_frontend(result: dict[str, Any], url: str) -> dict[str, Any]:
+    analysis = result.get("llm_analysis", {}) or {}
+    ab = result.get("simulated_ab_result", {}) or {}
+    variant_a = result.get("demo_website_json") or result.get("variant_a") or {}
+    variant_b = result.get("improved_variant_json") or result.get("variant_b") or {}
+    lift = float(ab.get("predicted_conversion_lift") or 0.0)
+
+    pain_points = []
+    for point in analysis.get("friction_points", []) or []:
+        evidence = str(point.get("evidence") or "")
+        pain_points.append({
+            "section": str(point.get("section") or "page").title(),
+            "type": evidence.split(".")[0][:60] or "Friction",
+            "severity": str(point.get("severity") or "medium"),
+            "desc": str(point.get("recommendation") or evidence),
+        })
+
+    base_score = 70
+    return {
+        "url": url,
+        "painPoints": pain_points,
+        "baseline": {
+            "headline": _first_section_headline(variant_a),
+            "score": base_score,
+            "cvr": f"{(ab.get('variant_a', {}).get('predicted_conversion_rate') or 0.038) * 100:.1f}%",
+        },
+        "variant": {
+            "headline": _first_section_headline(variant_b),
+            "score": min(99, round(base_score * (1 + lift))),
+            "cvr": f"{(ab.get('variant_b', {}).get('predicted_conversion_rate') or 0.046) * 100:.1f}%",
+            "changes": list(analysis.get("recommendations", []) or [])[:4],
+        },
+        "uplift": f"{'+' if lift >= 0 else ''}{lift * 100:.0f}%",
+    }
 
 
 def deconstruct_html_document(html: str, target_customer: str = TARGET_CUSTOMER) -> dict[str, Any]:
@@ -1243,8 +1301,35 @@ class DemoHandler(BaseHTTPRequestHandler):
             return
         self._send_json(result)
 
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self._cors_headers()
+        self.end_headers()
+
+    def _cors_headers(self) -> None:
+        self.send_header("access-control-allow-origin", "*")
+        self.send_header("access-control-allow-methods", "GET, POST, OPTIONS")
+        self.send_header("access-control-allow-headers", "content-type")
+
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if path == "/analyze-url":
+            payload = self._read_json()
+            url = (payload.get("url") or "").strip()
+            if not url:
+                self._send_json({"error": "url required"}, status=400)
+                return
+            try:
+                html = _fetch_url_html(url)
+            except Exception as error:
+                self._send_json({"error": f"could not fetch url: {error}"}, status=502)
+                return
+            result = optimize_html_document(
+                html=html,
+                target_customer=payload.get("target_customer", TARGET_CUSTOMER),
+            )
+            self._send_json(_adapt_for_frontend(result, url))
+            return
         if path == "/optimize-html":
             payload = self._read_payload()
             try:
@@ -1313,6 +1398,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                 "GET /api/optimize-website": "Run optimization on website/index.html; return JSON.",
                 "GET /final-result": "Run the full demo loop and return all artifacts.",
                 "POST /analyze": "Analyze a website_json for friction.",
+                "POST /analyze-url": "Fetch a public URL, run the loop, return frontend-shaped result.",
                 "POST /optimize-html": "Optimize an HTML page (file/string/path).",
                 "POST /variant": "Generate improved website JSON.",
                 "POST /ab-result": "Predict A vs B conversion lift.",
@@ -1345,6 +1431,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("content-type", "text/html; charset=utf-8")
         self.send_header("content-length", str(len(encoded)))
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -1353,6 +1440,7 @@ class DemoHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("content-type", "application/json; charset=utf-8")
         self.send_header("content-length", str(len(encoded)))
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(encoded)
 

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { mockResults } from '../data/mockResults.js';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || null;
-
 export function useABLoop() {
   const [phase, setPhase] = useState('idle');
   const [result, setResult] = useState(null);
@@ -12,27 +10,20 @@ export function useABLoop() {
     setError(null);
     setResult(null);
 
-    try {
-      setPhase('crawling');
-      await delay(800);
+    const fetchPromise = getAnalysis(url).catch(() => ({ ...mockResults, url }));
 
-      setPhase('diagnosing');
-      await delay(1000);
+    setPhase('crawling');
+    await delay(800);
+    setPhase('diagnosing');
+    await delay(1000);
+    setPhase('generating');
+    await delay(1200);
+    setPhase('benchmarking');
 
-      setPhase('generating');
-      await delay(1200);
-
-      setPhase('benchmarking');
-      const data = await getAnalysis(url);
-
-      await delay(700);
-      setResult({ ...data, url });
-      setPhase('done');
-    } catch {
-      await delay(700);
-      setResult({ ...mockResults, url });
-      setPhase('done');
-    }
+    const data = await fetchPromise;
+    await delay(400);
+    setResult({ ...data, url });
+    setPhase('done');
   }
 
   function reset() {
@@ -45,14 +36,11 @@ export function useABLoop() {
 }
 
 async function getAnalysis(url) {
-  if (!BACKEND_URL) return mockResults;
-
-  const response = await fetch(`${BACKEND_URL}/analyze`, {
+  const response = await fetch('/api/analyze-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
   });
-
   if (!response.ok) throw new Error('API error');
   return response.json();
 }
