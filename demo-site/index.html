@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Hackathon Weekend Build with Codex</title>
+  <meta name="description" content="Build and ship an AI agent in one day with OpenAI Codex and Codex Auto Runner in Ho Chi Minh City.">
+  <meta property="og:title" content="AI Hackathon Weekend Build with Codex">
+  <meta property="og:description" content="Build and ship an AI agent in one day with OpenAI Codex and CAR.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,background=white,quality=75,width=1600,height=900/event-covers/vv/f84680b8-f0c0-4b3b-95cc-f08013f0f55b.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    :root {
+      --bg: #0d1515;
+      --bg-2: #111f1f;
+      --panel: #172424;
+      --panel-2: #0f1b1b;
+      --line: #304545;
+      --line-soft: rgba(131, 211, 219, 0.2);
+      --text: #edf7f7;
+      --muted: #a8bbbb;
+      --muted-2: #7f9191;
+      --teal: #63b4bc;
+      --teal-2: #8adce3;
+      --amber: #ffb689;
+      --green: #8ae3bd;
+      --red-muted: #9da8a8;
+      --shadow: rgba(0, 0, 0, 0.34);
+      --max: 1160px;
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(99, 180, 188, 0.22), transparent 32rem),
+        radial-gradient(circle at 92% 12%, rgba(255, 182, 137, 0.13), transparent 30rem),
+        linear-gradient(180deg, #0d1515 0%, #081111 100%);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid var(--line-soft);
+      background: rgba(8, 17, 17, 0.76);
+      backdrop-filter: blur(16px);
+    }
+
+    .topbar .wrap {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 850;
+      letter-spacing: 0.01em;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      color: #062226;
+      background: var(--teal);
+      font-weight: 900;
+      box-shadow: 0 0 24px rgba(99, 180, 188, 0.34);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 850;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--teal);
+      color: #062226;
+      box-shadow: 0 12px 34px rgba(99, 180, 188, 0.28);
+    }
+
+    .btn-secondary {
+      background: rgba(16, 32, 32, 0.86);
+      border-color: #416060;
+      color: var(--text);
+    }
+
+    .btn-small { min-height: 36px; padding: 0 13px; font-size: 13px; }
+
+    main { padding: 24px 0 36px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(23, 36, 36, 0.88), rgba(12, 23, 23, 0.94));
+      box-shadow: 0 22px 70px var(--shadow);
+    }
+
+    .hero-copy { padding: 22px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--teal-2);
+      border: 1px solid rgba(138, 220, 227, 0.36);
+      border-radius: 999px;
+      padding: 6px 11px;
+      background: rgba(99, 180, 188, 0.08);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    h1 {
+      margin: 14px 0 12px;
+      max-width: 12ch;
+      font-size: clamp(36px, 6vw, 68px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+    }
+
+    .subhead {
+      margin: 0;
+      max-width: 62ch;
+      color: var(--muted);
+      font-size: clamp(16px, 1.7vw, 19px);
+    }
+
+    .trust-row {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .avatar-stack {
+      display: flex;
+      align-items: center;
+      margin-right: 2px;
+    }
+
+    .avatar-stack img {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #0b1515;
+      background: #1c2c2c;
+      margin-left: -9px;
+    }
+
+    .avatar-stack img:first-child { margin-left: 0; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 31px;
+      padding: 0 10px;
+      border-radius: 999px;
+      border: 1px solid #365151;
+      background: #102020;
+      color: #c8dddd;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .facts {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .fact {
+      border: 1px solid #2f4646;
+      border-radius: 14px;
+      padding: 13px;
+      background: #0e1d1d;
+    }
+
+    .fact b {
+      display: block;
+      color: var(--teal-2);
+      font-size: 15px;
+      margin-bottom: 3px;
+    }
+
+    .fact span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status-closed b { color: var(--red-muted); }
+
+    .cta-box {
+      margin-top: 18px;
+      border: 1px solid #3b5656;
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(8, 17, 17, 0.56);
+    }
+
+    .waitlist-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid #3a5656;
+      border-radius: 999px;
+      background: #081313;
+      color: var(--text);
+      padding: 0 15px;
+      font: inherit;
+      outline: none;
+    }
+
+    input[type="email"]:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(99, 180, 188, 0.16);
+    }
+
+    .form-message {
+      min-height: 20px;
+      margin: 8px 0 0;
+      color: var(--teal-2);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 11px;
+    }
+
+    .poster {
+      overflow: hidden;
+      position: relative;
+      min-height: 430px;
+    }
+
+    .poster img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      aspect-ratio: 16 / 13;
+      filter: saturate(1.06) contrast(1.02);
+    }
+
+    .poster::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 52%, rgba(4, 12, 12, 0.86) 100%);
+      pointer-events: none;
+    }
+
+    .poster-caption {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 1;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .poster-caption strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    .poster-caption span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .poster-tag {
+      flex: 0 0 auto;
+      color: #061b1e;
+      background: var(--amber);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    section { margin-top: 18px; }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .lead {
+      margin: 5px 0 0;
+      max-width: 70ch;
+      color: var(--muted);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 16px;
+      background: linear-gradient(180deg, #142424, #0d1919);
+    }
+
+    .metric b {
+      display: block;
+      color: var(--amber);
+      font-size: 29px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      margin-bottom: 7px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .slot {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: #0f1d1d;
+      min-height: 132px;
+    }
+
+    .slot time {
+      color: var(--amber);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .slot b {
+      display: block;
+      margin: 10px 0 5px;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .slot p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .slot.hot {
+      border-color: rgba(255, 182, 137, 0.62);
+      box-shadow: inset 0 0 0 1px rgba(255, 182, 137, 0.1), 0 20px 48px rgba(0, 0, 0, 0.18);
+    }
+
+    .judge-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .track-card {
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 14px;
+      background: linear-gradient(180deg, #142424, #0d1919);
+    }
+
+    .track-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: var(--amber);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .track-title span:last-child {
+      color: var(--muted-2);
+    }
+
+    .judge-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .judge {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #2d4242;
+      border-radius: 13px;
+      padding: 8px;
+      background: #0b1818;
+    }
+
+    .judge img {
+      width: 54px;
+      height: 54px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 1px solid #4f6b6b;
+      background: #192a2a;
+    }
+
+    .judge b {
+      display: block;
+      line-height: 1.15;
+      font-size: 15px;
+    }
+
+    .judge small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .conversion-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .quote {
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      padding: 18px;
+      background: #0e1c1c;
+    }
+
+    .quote p {
+      margin: 0;
+      color: #dceaea;
+      font-size: 19px;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+    }
+
+    .quote small {
+      display: block;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .footer {
+      margin-top: 18px;
+      border: 1px solid #3b5656;
+      border-radius: 18px;
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(23, 36, 36, 0.92), rgba(8, 17, 17, 0.96));
+    }
+
+    .footer strong { display: block; font-size: 18px; }
+    .footer span { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+    @media (max-width: 980px) {
+      .hero,
+      .conversion-panel { grid-template-columns: 1fr; }
+      .metric-grid,
+      .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .judge-grid { grid-template-columns: 1fr; }
+      .poster { min-height: 360px; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { width: min(100% - 20px, var(--max)); }
+      .topbar .wrap { min-height: 58px; }
+      .brand span:last-child { display: none; }
+      .nav-link { display: none; }
+      main { padding-top: 14px; }
+      .hero-copy { padding: 17px; }
+      h1 { max-width: 11ch; }
+      .facts,
+      .waitlist-form,
+      .metric-grid,
+      .timeline { grid-template-columns: 1fr; }
+      .poster { min-height: 310px; }
+      .poster-caption { align-items: start; flex-direction: column; }
+      .section-head { display: block; }
+      .footer { display: block; }
+      .footer .hero-actions { margin-top: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <a class="brand" href="#top" aria-label="Codex Community Vietnam">
+        <span class="brand-mark">C</span>
+        <span>Codex Community Vietnam</span>
+      </a>
+      <nav class="nav-actions" aria-label="Primary navigation">
+        <a class="nav-link" href="#agenda">Agenda</a>
+        <a class="nav-link" href="#judges">Judges</a>
+        <a class="btn btn-primary btn-small" href="#waitlist">Join Waitlist</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top" class="wrap">
+    <section class="hero" aria-label="Event hero">
+      <article class="panel hero-copy">
+        <div class="eyebrow">AI Hackathon - Weekend Build with Codex and CAR</div>
+        <h1>Build and ship an AI agent in 1 day.</h1>
+        <p class="subhead">A hands-on Ho Chi Minh City build session for engineers, founders, and operators learning practical agentic engineering with OpenAI Codex and Codex Auto Runner.</p>
+
+        <div class="trust-row" aria-label="Social proof">
+          <div class="avatar-stack">
+            <img src="https://media.licdn.com/dms/image/v2/D5603AQF_mthfSkI3LQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1671733477368?e=1779926400&amp;v=beta&amp;t=SF5k5hgXaW2FMJAYfrLTaLnvCEIPPaD5kbhjcJANDrs" alt="Christian Geissendoerfer">
+            <img src="https://media.licdn.com/dms/image/v2/D5603AQEIsOLNbwAz6g/profile-displayphoto-crop_800_800/B56ZmP2bnOKEAI-/0/1759055035554?e=1779926400&amp;v=beta&amp;t=nJGa16Sna-PlXt9CYB-6g8Uv9nI7slh9Hh0KmKty6yg" alt="Anh Thi Ho">
+            <img src="https://media.licdn.com/dms/image/v2/D5603AQHna0vy0Vx_kQ/profile-displayphoto-crop_800_800/B56ZfqglJ7G0AM-/0/1751986100420?e=1779926400&amp;v=beta&amp;t=ye4tidALwM6-NsnP9PO7rcrWy78_8i_TWoUChQC2buk" alt="Jonathan Viet Pham">
+            <img src="https://media.licdn.com/dms/image/v2/D5603AQFCGuQ__eciVQ/profile-displayphoto-crop_800_800/B56Z1Y1Pi0KgAI-/0/1775311871830?e=1779926400&amp;v=beta&amp;t=LkwbOO5dUnXL5oShRSLWgWG5f4iY4jhxhsYa9R9YJ_s" alt="David">
+          </div>
+          <span class="chip">175 builders going</span>
+          <span class="chip">Sold out fast</span>
+          <span class="chip">3 build tracks</span>
+        </div>
+
+        <div class="facts">
+          <div class="fact"><b>May 09, 2026</b><span>Event date</span></div>
+          <div class="fact"><b>HCMC, Vietnam</b><span>Local build session</span></div>
+          <div class="fact"><b>11:30-18:00</b><span>Build, submit, judge, prizes</span></div>
+          <div class="fact status-closed"><b>Registration Closed</b><span>Waitlist open for next session</span></div>
+        </div>
+
+        <div class="cta-box" id="waitlist">
+          <form class="waitlist-form" id="waitlistForm">
+            <input id="emailInput" type="email" placeholder="Enter email for next event waitlist" autocomplete="email" required>
+            <button class="btn btn-primary" type="submit">Join Waitlist</button>
+          </form>
+          <p class="form-message" id="formMessage"></p>
+          <div class="hero-actions">
+            <a class="btn btn-secondary" href="https://luma.com/tle9bvfw?tk=9yIIPC" target="_blank" rel="noreferrer" data-cta="luma">View Luma Event</a>
+            <a class="btn btn-secondary" href="https://github.com/Git-on-my-level/codex-autorunner" target="_blank" rel="noreferrer" data-cta="car">CAR Repository</a>
+          </div>
+        </div>
+      </article>
+
+      <figure class="panel poster">
+        <img id="heroPoster" src="https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,background=white,quality=75,width=1600,height=900/event-covers/vv/f84680b8-f0c0-4b3b-95cc-f08013f0f55b.png" alt="Weekend Build with Codex event poster">
+        <figcaption class="poster-caption">
+          <span>
+            <strong id="posterTitle">Weekend Build with Codex</strong>
+            <span id="posterSubtitle">Official Luma event image</span>
+          </span>
+          <span class="poster-tag" id="posterTag">Event Poster</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section aria-label="Event metrics">
+      <div class="metric-grid">
+        <div class="metric"><b>1 day</b><span>From concept to shipped demo</span></div>
+        <div class="metric"><b>175</b><span>Builders registered</span></div>
+        <div class="metric"><b>3</b><span>Tracks: Scale, Depth, Impact</span></div>
+        <div class="metric"><b>CAR</b><span>Codex Auto Runner live workflow</span></div>
+      </div>
+    </section>
+
+    <section id="agenda">
+      <div class="section-head">
+        <div>
+          <h2>Agenda built for shipping</h2>
+          <p class="lead">The day is designed to move people from context to implementation, then from implementation to submission.</p>
+        </div>
+      </div>
+      <div class="timeline">
+        <article class="slot"><time>09:00</time><b>Check-in</b><p>Arrive, settle in, meet builders.</p></article>
+        <article class="slot"><time>09:30</time><b>Track briefing</b><p>Intro, credits, tracks, and prizes.</p></article>
+        <article class="slot"><time>10:05</time><b>CAR demo</b><p>Interactive Codex Auto Runner walkthrough.</p></article>
+        <article class="slot hot"><time>11:30</time><b>Build starts</b><p>Teams start building with Codex and CAR.</p></article>
+        <article class="slot hot"><time>16:00</time><b>Submit</b><p>Final project submission deadline.</p></article>
+        <article class="slot"><time>16:00-18:00</time><b>Judging</b><p>Judges review projects across tracks.</p></article>
+        <article class="slot"><time>18:00</time><b>Prizes</b><p>Winners announced.</p></article>
+        <article class="slot"><time>Next</time><b>Waitlist</b><p>Registration is closed, but future sessions are coming.</p></article>
+      </div>
+    </section>
+
+    <section id="judges">
+      <div class="section-head">
+        <div>
+          <h2>Track judges</h2>
+          <p class="lead">Real judge photos pulled from provided LinkedIn media URLs for stronger credibility and visual trust.</p>
+        </div>
+      </div>
+
+      <div class="judge-grid">
+        <article class="track-card">
+          <div class="track-title"><span>Track 1</span><span>Scale</span></div>
+          <div class="judge-list">
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQF_mthfSkI3LQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1671733477368?e=1779926400&amp;v=beta&amp;t=SF5k5hgXaW2FMJAYfrLTaLnvCEIPPaD5kbhjcJANDrs" alt="Christian Geissendoerfer"><div><b>Christian Geissendoerfer</b><small>Market Scale judge</small></div></div>
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQEIsOLNbwAz6g/profile-displayphoto-crop_800_800/B56ZmP2bnOKEAI-/0/1759055035554?e=1779926400&amp;v=beta&amp;t=nJGa16Sna-PlXt9CYB-6g8Uv9nI7slh9Hh0KmKty6yg" alt="Anh Thi Ho"><div><b>Anh Thi Ho</b><small>Market Scale judge</small></div></div>
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQHna0vy0Vx_kQ/profile-displayphoto-crop_800_800/B56ZfqglJ7G0AM-/0/1751986100420?e=1779926400&amp;v=beta&amp;t=ye4tidALwM6-NsnP9PO7rcrWy78_8i_TWoUChQC2buk" alt="Jonathan Viet Pham"><div><b>Jonathan Viet Pham</b><small>Market Scale judge</small></div></div>
+          </div>
+        </article>
+
+        <article class="track-card">
+          <div class="track-title"><span>Track 2</span><span>Depth</span></div>
+          <div class="judge-list">
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQFCGuQ__eciVQ/profile-displayphoto-crop_800_800/B56Z1Y1Pi0KgAI-/0/1775311871830?e=1779926400&amp;v=beta&amp;t=LkwbOO5dUnXL5oShRSLWgWG5f4iY4jhxhsYa9R9YJ_s" alt="David"><div><b>David</b><small>Creator of CAR</small></div></div>
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQEgE_sbf2135g/profile-displayphoto-crop_800_800/B56Z2MpX8RH4AM-/0/1776181203997?e=1779926400&amp;v=beta&amp;t=8v0Iu-AtRcWUFghBZN-OTsNnRZioi21hVfV8nC6TKV0" alt="Huu Loc"><div><b>Huu Loc</b><small>Depth judge</small></div></div>
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQF2Nx6bbyWs7g/profile-displayphoto-crop_800_800/B56ZtFUZjRK8AI-/0/1766394569886?e=1779926400&amp;v=beta&amp;t=ceZoT5YaPOhukis5V7HuMpKxRBBOJbgBn_QsC3YDH1w" alt="Vo Trong Thu"><div><b>Vo Trong Thu</b><small>Depth judge</small></div></div>
+          </div>
+        </article>
+
+        <article class="track-card">
+          <div class="track-title"><span>Track 3</span><span>Impact</span></div>
+          <div class="judge-list">
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQE9CDgulmk2uA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1731651675872?e=1779926400&amp;v=beta&amp;t=-nsCNIIhXBcFpuGhC9nx4mPnnl-BBG4IMo8chXH_LWU" alt="Ramil"><div><b>Ramil</b><small>Impact judge</small></div></div>
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D5603AQFT4R3wI_eMWg/profile-displayphoto-shrink_800_800/B56ZVwr1n5HsAc-/0/1741352296409?e=1779926400&amp;v=beta&amp;t=Ezn7PSbi6Vf8fP--fb4UG4xxyn3mMFYDqF0PSnHSJ6s" alt="Harley"><div><b>Harley</b><small>Impact judge</small></div></div>
+            <div class="judge"><img loading="lazy" src="https://media.licdn.com/dms/image/v2/D4D03AQFk-I0-XfxrSQ/profile-displayphoto-shrink_800_800/B4DZYIy593GwAc-/0/1743904285954?e=1779926400&amp;v=beta&amp;t=VaMvTe-miegKCi9NA1A1hM-7AZNor4pyS72551qmlGE" alt="Michael"><div><b>Michael</b><small>Impact judge</small></div></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="conversion-panel">
+        <article class="quote">
+          <p>Registration is closed, so the best conversion path is not another dead end. It is a waitlist for the next build session.</p>
+          <small>Primary A/B test target: fallback CTA conversion</small>
+        </article>
+        <article class="quote">
+          <p>Existing event pages show what happened. This page is designed so an optimization agent can decide what to change next.</p>
+          <small>Demo target for automated website improvement</small>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>
+        <strong>Registration closed for this round.</strong>
+        <span>Join the waitlist or follow Codex Community Vietnam for the next session.</span>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#waitlist">Join Waitlist</a>
+        <a class="btn btn-secondary" href="https://www.linkedin.com/company/codex-community-vietnam/posts/?feedView=all" target="_blank" rel="noreferrer">Open LinkedIn</a>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      var form = document.getElementById("waitlistForm");
+      var email = document.getElementById("emailInput");
+      var message = document.getElementById("formMessage");
+      var poster = document.getElementById("heroPoster");
+      var posterTitle = document.getElementById("posterTitle");
+      var posterSubtitle = document.getElementById("posterSubtitle");
+      var posterTag = document.getElementById("posterTag");
+
+      var gallery = [
+        {
+          title: "Weekend Build with Codex",
+          subtitle: "Official Luma event image",
+          tag: "Event Poster",
+          src: "https://images.lumacdn.com/cdn-cgi/image/format=auto,fit=cover,dpr=2,background=white,quality=75,width=1600,height=900/event-covers/vv/f84680b8-f0c0-4b3b-95cc-f08013f0f55b.png"
+        },
+        {
+          title: "Track 1 - Market Scale",
+          subtitle: "Christian Geissendoerfer, Anh Thi Ho, Jonathan Viet Pham",
+          tag: "Scale Judges",
+          src: "https://media.licdn.com/dms/image/v2/D5603AQF_mthfSkI3LQ/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1671733477368?e=1779926400&v=beta&t=SF5k5hgXaW2FMJAYfrLTaLnvCEIPPaD5kbhjcJANDrs"
+        },
+        {
+          title: "Track 2 - Depth",
+          subtitle: "David, Huu Loc, Vo Trong Thu",
+          tag: "Depth Judges",
+          src: "https://media.licdn.com/dms/image/v2/D5603AQFCGuQ__eciVQ/profile-displayphoto-crop_800_800/B56Z1Y1Pi0KgAI-/0/1775311871830?e=1779926400&v=beta&t=LkwbOO5dUnXL5oShRSLWgWG5f4iY4jhxhsYa9R9YJ_s"
+        },
+        {
+          title: "Track 3 - Impact",
+          subtitle: "Ramil, Harley, Michael",
+          tag: "Impact Judges",
+          src: "https://media.licdn.com/dms/image/v2/D4D03AQFk-I0-XfxrSQ/profile-displayphoto-shrink_800_800/B4DZYIy593GwAc-/0/1743904285954?e=1779926400&v=beta&t=VaMvTe-miegKCi9NA1A1hM-7AZNor4pyS72551qmlGE"
+        }
+      ];
+
+      var current = 0;
+      function setPoster(index) {
+        var item = gallery[index];
+        poster.src = item.src;
+        posterTitle.textContent = item.title;
+        posterSubtitle.textContent = item.subtitle;
+        posterTag.textContent = item.tag;
+      }
+
+      setInterval(function () {
+        current = (current + 1) % gallery.length;
+        setPoster(current);
+      }, 5200);
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var value = String(email.value || "").trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          message.textContent = "Please enter a valid email address.";
+          return;
+        }
+
+        var saved = [];
+        try {
+          saved = JSON.parse(localStorage.getItem("codex_event_waitlist") || "[]");
+        } catch (error) {
+          saved = [];
+        }
+
+        if (saved.indexOf(value) === -1) {
+          saved.push(value);
+          localStorage.setItem("codex_event_waitlist", JSON.stringify(saved));
+        }
+
+        message.textContent = "You are on the waitlist. Stored locally for this demo.";
+        email.value = "";
+      });
+
+      document.querySelectorAll("[data-cta]").forEach(function (node) {
+        node.addEventListener("click", function () {
+          var key = "cta_" + node.getAttribute("data-cta");
+          var count = Number(localStorage.getItem(key) || "0") + 1;
+          localStorage.setItem(key, String(count));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
