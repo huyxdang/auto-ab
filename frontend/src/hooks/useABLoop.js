@@ -120,14 +120,48 @@ function expandToTwoVariants(data) {
   const variantC = {
     ...data.variant,
     label: 'C',
-    hypothesis: recs[2] || recs[1] || 'Reorder pricing and proof to build trust earlier.',
-    changes: recs.slice(2, 4).length ? recs.slice(2, 4) : recs.slice(1, 3),
-    headline: rephrase(data.variant?.headline),
+    hypothesis: 'Trust-first route: sell judge credibility before asking for the email.',
+    changes: ['Promote judges and tracks beside the hero form', 'Replace poster dominance with judge proof carousel', 'Move agenda below conversion proof'],
+    headline: 'Meet the judges, get the kit, then claim your next sprint invite',
+    site: {
+      ...data.variant?.site,
+      headline: 'Meet the judges, get the kit, then claim your next sprint invite',
+      status: 'Judge-backed next cohort waitlist',
+      primaryCta: 'Get judge-backed invite',
+      secondaryCta: 'Review judging tracks',
+      sideTitle: 'Judge Proof Rail',
+      sideCopy: 'Credibility moves from lower page sections into the first decision moment.',
+      modules: ['Judges promoted above agenda', 'Track criteria added to hero', 'Poster becomes supporting proof'],
+      experiments: ['Next test: judge-first vs kit-first', 'Track selector before email', 'Proof carousel timing'],
+      stickyCta: 'Sticky mobile bar: Get invite + judging criteria',
+    },
     uplift: `+${altLift.toFixed(0)}%`,
     liftPct: altLift,
   };
 
-  return { ...data, variants: [variantB, variantC] };
+  const variantD = {
+    ...data.variant,
+    label: 'D',
+    hypothesis: 'Mobile-first route: keep the next cohort CTA visible during scroll.',
+    changes: ['Add sticky mobile invite bar', 'Condense hero facts into one availability strip', 'Move resources behind email capture'],
+    headline: 'Save your next Codex sprint seat while you browse the agenda',
+    site: {
+      ...data.variant?.site,
+      headline: 'Save your next Codex sprint seat while you browse the agenda',
+      status: 'Mobile sticky invite test',
+      primaryCta: 'Save next sprint seat',
+      secondaryCta: 'Browse agenda first',
+      sideTitle: 'Sticky Conversion Layer',
+      sideCopy: 'The CTA follows high-intent visitors as they inspect agenda, judges, and resources.',
+      modules: ['Sticky CTA follows scroll', 'Availability strip replaces closed card', 'Resources unlock after email'],
+      experiments: ['Next test: sticky vs static CTA', 'Agenda-first mobile path', 'Email unlock resources'],
+      stickyCta: 'Sticky mobile bar: Save seat + unlock CAR templates',
+    },
+    uplift: `+${Math.max(0, liftPct - 4).toFixed(0)}%`,
+    liftPct: Math.max(0, liftPct - 4),
+  };
+
+  return { ...data, variants: [variantB, variantC, variantD] };
 }
 
 function pickWinner(data) {

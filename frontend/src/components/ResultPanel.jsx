@@ -43,10 +43,17 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
   if (!result) return null;
 
   const variants = result.variants || [];
-  const primaryVariant = variants[0] || result.variant;
-  const secondaryVariant = variants[1];
+  const allVariants = variants.length ? variants : result.variant ? [{ ...result.variant, label: 'B' }] : [];
+  const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  const primaryVariant = allVariants[activeVariantIndex] || allVariants[0] || result.variant;
+  const secondaryVariant = allVariants[(activeVariantIndex + 1) % allVariants.length];
   const isTesting = phase === 'testing';
   const isDone = phase === 'done';
+
+  function cycleVariant() {
+    if (allVariants.length <= 1) return;
+    setActiveVariantIndex((index) => (index + 1) % allVariants.length);
+  }
 
   return (
     <div className="result-panel result-final">
@@ -83,13 +90,15 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
 
       <WebsiteComparison
         baseline={result.baseline}
+        cycleVariant={cycleVariant}
         isWinner={isDone && winner === primaryVariant?.label}
         isTesting={isTesting}
         uplift={primaryVariant ? (isTesting ? <LiftBar target={primaryVariant.liftPct} /> : primaryVariant.uplift) : null}
         variant={primaryVariant}
+        variantCount={allVariants.length}
       />
 
-      {secondaryVariant ? (
+      {secondaryVariant && secondaryVariant !== primaryVariant ? (
         <article className={`runner-up-card${isDone && winner === secondaryVariant.label ? ' is-winner' : ''}`}>
           <div>
             <p className="panel-kicker">Alternate route</p>
@@ -102,8 +111,8 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
 
       {isDone ? (
         <div className="action-row">
-          <button className="button primary" type="button">Generate next variant</button>
-          <button className="button secondary" onClick={onReset} type="button">Run loop again</button>
+          <button className="button primary" onClick={() => document.querySelector('[data-generated-site]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} type="button">View generated website</button>
+          <button className="button secondary" onClick={cycleVariant} type="button">Run loop again</button>
           <button className="button secondary" onClick={onOpenReport} type="button">Open benchmark report</button>
         </div>
       ) : null}
@@ -111,7 +120,7 @@ export function ResultPanel({ phase, result, error, winner, onOpenReport, onRese
   );
 }
 
-function WebsiteComparison({ baseline, variant, uplift, isTesting, isWinner }) {
+function WebsiteComparison({ baseline, variant, uplift, isTesting, isWinner, cycleVariant, variantCount }) {
   const [viewMode, setViewMode] = useState('compare');
   const controlSite = baseline?.site || DEFAULT_CONTROL_SITE;
   const variantSite = variant?.site || buildVariantSite(variant);
@@ -125,6 +134,8 @@ function WebsiteComparison({ baseline, variant, uplift, isTesting, isWinner }) {
         <button className={viewMode === 'compare' ? 'active' : ''} onClick={() => setViewMode('compare')} type="button">Side by side</button>
         <button className={viewMode === 'original' ? 'active' : ''} onClick={() => setViewMode('original')} type="button">View original</button>
         <button className={viewMode === 'generated' ? 'active' : ''} onClick={() => setViewMode('generated')} type="button">View generated</button>
+        <button disabled={variantCount <= 1} onClick={cycleVariant} type="button">Cycle variants</button>
+        <a href={variantSite.fullPagePath || '/auto-ab/generated/variant-b.html'} target="_blank" rel="noreferrer">Open full page</a>
       </div>
 
       <div className={`website-compare ${viewMode !== 'compare' ? 'single' : ''}`}>
@@ -153,7 +164,7 @@ function WebsiteComparison({ baseline, variant, uplift, isTesting, isWinner }) {
 
 function WebsitePreview({ label, site, tone, uplift, isWinner }) {
   return (
-    <article className={`website-preview actual-site-preview ${tone}${isWinner ? ' is-winner' : ''}`}>
+    <article className={`website-preview actual-site-preview ${tone}${isWinner ? ' is-winner' : ''}`} data-generated-site={tone === 'variant' ? 'true' : undefined}>
       <div className="site-browser-bar">
         <span>{label}</span>
         {uplift ? <strong>{uplift} predicted lift</strong> : null}
@@ -252,6 +263,7 @@ const DEFAULT_CONTROL_SITE = {
   proof: ['1 day from concept to demo', '175 builders registered', '3 tracks'],
   modules: ['Agenda below fold', 'Judges lower down', 'Footer repeats waitlist'],
   experiments: [],
+  fullPagePath: '/auto-ab/website2/index.html',
 };
 
 const DEFAULT_VARIANT_SITE = {
@@ -276,6 +288,7 @@ const DEFAULT_VARIANT_SITE = {
   modules: ['Invite ladder replaces dead-end status', 'Proof rail promoted above agenda', 'Luma/GitHub moved to resource drawer'],
   experiments: ['Next test: launch kit vs cohort headline', 'Mobile sticky invite bar', 'Judge proof carousel'],
   stickyCta: 'Sticky mobile bar: Claim invite + get setup guide',
+  fullPagePath: '/auto-ab/generated/variant-b.html',
   changes: ['Closed status converted into a live next-cohort invite ladder', 'Hero offer changed from attending a closed event to claiming a launch kit', 'Poster demoted into proof so the form owns the visual hierarchy', 'Luma and GitHub links moved into a resource drawer after email capture', 'Next loop will test sticky mobile invite bar and judge-proof carousel'],
 };
 
