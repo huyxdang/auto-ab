@@ -1,13 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { BehaviorPage } from './components/BehaviorPage.jsx';
 import { BenchmarkReport } from './components/BenchmarkReport.jsx';
 import { CtaSection } from './components/CtaSection.jsx';
 import { Hero } from './components/Hero.jsx';
 import { LoopExplainer } from './components/LoopExplainer.jsx';
 import { MetricsStrip } from './components/MetricsStrip.jsx';
+import { useABLoop } from './hooks/useABLoop.js';
 
 export default function App() {
   const [view, setView] = useState('home');
   const [lastResult, setLastResult] = useState(null);
+  const ab = useABLoop();
+
+  useEffect(() => {
+    if (ab.phase === 'connected' && view !== 'behavior') {
+      setView('behavior');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [ab.phase, view]);
 
   function openReport() {
     setView('report');
@@ -17,6 +27,12 @@ export default function App() {
   function returnHome() {
     setView('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startAI() {
+    setView('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    ab.runAnalysis();
   }
 
   return (
@@ -39,11 +55,13 @@ export default function App() {
       <main>
         {view === 'home' ? (
           <>
-            <Hero onComplete={setLastResult} onOpenReport={openReport} />
+            <Hero ab={ab} onComplete={setLastResult} onOpenReport={openReport} />
             <MetricsStrip />
             <LoopExplainer />
             <CtaSection />
           </>
+        ) : view === 'behavior' ? (
+          <BehaviorPage target={ab.target} onStart={startAI} onBack={returnHome} />
         ) : (
           <BenchmarkReport result={lastResult} onBack={returnHome} />
         )}

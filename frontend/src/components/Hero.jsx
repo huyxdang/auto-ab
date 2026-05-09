@@ -1,6 +1,5 @@
 import { Link2, Radar } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useABLoop } from '../hooks/useABLoop.js';
 import { ResultPanel } from './ResultPanel.jsx';
 
 const DEFAULT_TARGET_URL = 'https://quotations-crm-pieces-vii.trycloudflare.com/';
@@ -12,11 +11,11 @@ const ANALYTICS_SOURCES = [
   { value: 'hotjar', label: 'Hotjar' },
 ];
 
-export function Hero({ onComplete, onOpenReport }) {
+export function Hero({ ab, onComplete, onOpenReport }) {
   const [url, setUrl] = useState(DEFAULT_TARGET_URL);
   const [source, setSource] = useState('simulated');
   const [touched, setTouched] = useState(false);
-  const { phase, result, error, winner, runLoop, reset } = useABLoop();
+  const { phase, result, error, winner, runConnect, reset } = ab;
   const isRunning = phase !== 'idle' && phase !== 'done';
   const isValid = isValidUrl(url);
   const showError = touched && url.length > 0 && !isValid;
@@ -29,7 +28,7 @@ export function Hero({ onComplete, onOpenReport }) {
     event.preventDefault();
     setTouched(true);
     if (!isValid || isRunning) return;
-    runLoop(url.trim(), source);
+    runConnect(url.trim(), source);
   }
 
   function handleReset() {

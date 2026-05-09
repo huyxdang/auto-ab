@@ -6,26 +6,36 @@ export function useABLoop() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [winner, setWinner] = useState(null);
+  const [target, setTarget] = useState({ url: '', source: 'simulated' });
+  const [pendingFetch, setPendingFetch] = useState(null);
 
-  async function runLoop(url, analyticsSource = 'simulated') {
+  async function runConnect(url, source = 'simulated') {
     setError(null);
     setResult(null);
     setWinner(null);
+    setTarget({ url, source });
 
     const fetchPromise = getAnalysis(url).catch(() => ({ ...mockResults, url }));
+    setPendingFetch(() => fetchPromise);
 
     setPhase('connecting');
-    await delay(1200);
+    await delay(1400);
+    setPhase('connected');
+  }
+
+  async function runAnalysis() {
+    if (!pendingFetch) return;
+
     setPhase('crawling');
     await delay(800);
     setPhase('diagnosing');
-    await delay(1000);
+    await delay(1100);
     setPhase('generating');
-    await delay(1200);
+    await delay(1400);
 
-    const data = await fetchPromise;
+    const data = await pendingFetch;
     const dual = expandToTwoVariants(data);
-    setResult({ ...dual, url, analyticsSource });
+    setResult({ ...dual, url: target.url, analyticsSource: target.source });
 
     setPhase('testing');
     await delay(2200);
@@ -38,9 +48,10 @@ export function useABLoop() {
     setResult(null);
     setError(null);
     setWinner(null);
+    setPendingFetch(null);
   }
 
-  return { phase, result, error, winner, runLoop, reset };
+  return { phase, result, error, winner, target, runConnect, runAnalysis, reset };
 }
 
 async function getAnalysis(url) {
