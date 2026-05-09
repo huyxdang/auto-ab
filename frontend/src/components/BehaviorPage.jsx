@@ -1,5 +1,6 @@
 import { Activity, ArrowLeft, Clock, MousePointerClick, Play, Sparkles, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import website2Html from '../../../website2/index.html?raw';
 import { ResultPanel } from './ResultPanel.jsx';
 
 const ELEMENT_SIGNALS = [
@@ -136,6 +137,7 @@ export function BehaviorPage({ ab, onStart, onBack, onOpenReport }) {
   const elementSignals = behavior?.elementSignals?.length ? behavior.elementSignals : ELEMENT_SIGNALS;
   const recordings = behavior?.recordings?.length ? behavior.recordings : RECORDINGS;
   const [activeRecordingId, setActiveRecordingId] = useState(recordings[1]?.id || recordings[0]?.id);
+  const [replayMode, setReplayMode] = useState('combined');
   const sourceLabel = SOURCE_LABELS[target?.source] || 'analytics';
   const activeRecording = recordings.find((rec) => rec.id === activeRecordingId) || recordings[0];
   const aiRunning = ['crawling', 'diagnosing', 'generating', 'testing'].includes(phase);
@@ -180,6 +182,24 @@ export function BehaviorPage({ ab, onStart, onBack, onOpenReport }) {
           <Stat icon={<Activity size={16} />} label="Bounce rate" value={behavior?.bounceRate || '58%'} trend="up" />
         </div>
 
+        <article className="behavior-card behavior-site-card">
+          <header>
+            <h2>Actual website replay + heatmap</h2>
+            <div className="replay-controls" aria-label="Replay display mode">
+              <button className={replayMode === 'combined' ? 'active' : ''} onClick={() => setReplayMode('combined')} type="button">Combined</button>
+              <button className={replayMode === 'heatmap' ? 'active' : ''} onClick={() => setReplayMode('heatmap')} type="button">Heatmap</button>
+              <button className={replayMode === 'path' ? 'active' : ''} onClick={() => setReplayMode('path')} type="button">Mouse path</button>
+            </div>
+          </header>
+          <div className="active-session-summary">
+            <span>{activeRecording?.id}</span>
+            <strong>{activeRecording?.dropoff}</strong>
+            <p>{sessionInsight(activeRecording)}</p>
+          </div>
+          <MousePathReplay mode={replayMode} recording={activeRecording} />
+          <p className="behavior-note">Click a session recording to replay its mouse path over the actual page. Heat zones show where attention clusters before the AI diagnosis.</p>
+        </article>
+
         <div className="behavior-grid">
           <article className="behavior-card">
             <header>
@@ -187,7 +207,6 @@ export function BehaviorPage({ ab, onStart, onBack, onOpenReport }) {
               <span className="panel-kicker">DOM signals · website2/index.html</span>
             </header>
             <ElementMap activeElement={activeRecording?.hotspot} signals={elementSignals} />
-            <MousePathReplay recording={activeRecording} />
             <p className="behavior-note">auto-ab parsed the actual page elements, then mapped session behavior to conversion friction. The strongest issue is not low attention; it is closed-registration anxiety before the waitlist fallback feels primary.</p>
           </article>
 
@@ -265,15 +284,28 @@ function ElementMap({ activeElement, signals }) {
   );
 }
 
-function MousePathReplay({ recording }) {
+function MousePathReplay({ recording, mode = 'combined' }) {
   if (!recording) return null;
+  const showHeatmap = mode === 'combined' || mode === 'heatmap';
+  const showPath = mode === 'combined' || mode === 'path';
 
   return (
     <div className="mouse-replay">
       <div className="mouse-stage" aria-label={`Mouse path for ${recording.id}`}>
-        <iframe className="mouse-site-frame" src="/api/original" title="website2 replay target" />
+        <iframe className="mouse-site-frame" srcDoc={website2Html} title="website2 replay target" />
         <div className="mouse-stage-overlay" />
-        {recording.path.map((step, index) => (
+        {showHeatmap ? (
+          <div className="site-heat-layer" aria-hidden="true">
+            {recording.path.map((step, index) => (
+              <span
+                className={`site-heat-dot heat-${step.id}`}
+                key={`${recording.id}-heat-${index}`}
+                style={{ left: `${step.x}%`, top: `${step.y}%`, '--heat-size': `${150 - index * 18}px` }}
+              />
+            ))}
+          </div>
+        ) : null}
+        {showPath ? recording.path.map((step, index) => (
           <span
             className="path-node"
             key={`${recording.id}-${index}`}
@@ -282,7 +314,7 @@ function MousePathReplay({ recording }) {
           >
             {index + 1}
           </span>
-        ))}
+        )) : null}
       </div>
       <div className="path-steps">
         {recording.path.map((step, index) => (
@@ -291,6 +323,14 @@ function MousePathReplay({ recording }) {
       </div>
     </div>
   );
+}
+
+function sessionInsight(recording) {
+  if (!recording) return 'Select a recording to inspect the behavior path.';
+  if (recording.hotspot === 'waitlist') return 'AI sees intent at the waitlist, but the fallback offer needs stronger framing and less CTA competition.';
+  if (recording.hotspot === 'status') return 'AI sees the closed status acting like a stop sign before users understand the next-cohort option.';
+  if (recording.hotspot === 'judges') return 'AI sees credibility interest, but that proof appears too late for hesitant visitors.';
+  return 'AI maps attention back to the hero promise and checks whether the next action is specific enough.';
 }
 
 function formatNumber(value) {

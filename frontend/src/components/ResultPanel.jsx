@@ -164,7 +164,7 @@ function WebsitePreview({ label, site, tone, uplift, isWinner }) {
           <nav><em>Agenda</em><em>Judges</em><em>{site.navCta}</em></nav>
         </div>
         <div className="site-preview-hero">
-          <div>
+          <div className="site-preview-main">
             <span className="site-eyebrow">{site.eyebrow}</span>
             <span className="preview-status">{site.status}</span>
             <h2>{site.headline}</h2>
@@ -192,6 +192,12 @@ function WebsitePreview({ label, site, tone, uplift, isWinner }) {
         <div className="site-preview-modules">
           {site.modules.map((item) => <span key={item}>{item}</span>)}
         </div>
+        {site.experiments?.length ? (
+          <div className="site-preview-experiments">
+            {site.experiments.map((item) => <span key={item}>{item}</span>)}
+          </div>
+        ) : null}
+        {site.stickyCta ? <div className="site-sticky-preview">{site.stickyCta}</div> : null}
       </div>
     </article>
   );
@@ -245,19 +251,20 @@ const DEFAULT_CONTROL_SITE = {
   ],
   proof: ['1 day from concept to demo', '175 builders registered', '3 tracks'],
   modules: ['Agenda below fold', 'Judges lower down', 'Footer repeats waitlist'],
+  experiments: [],
 };
 
 const DEFAULT_VARIANT_SITE = {
   brand: 'Codex Community Vietnam',
   navCta: 'Join next cohort',
   eyebrow: 'Next Codex sprint · HCMC waitlist now open',
-  status: 'This session is full · next cohort waitlist open',
-  headline: 'Join the next Codex sprint and ship your first AI agent in one day',
-  subheadline: 'Get early access to the next hands-on build day, Codex setup guide, CAR workflow templates, and team matching before registration opens.',
-  primaryCta: 'Join next cohort waitlist',
-  secondaryCta: 'See what builders ship',
-  sideTitle: 'Next cohort package',
-  sideCopy: 'Setup guide, CAR templates, track examples, and early invite now support one fallback conversion path.',
+  status: 'Next cohort waitlist is live · first invites release soon',
+  headline: 'Get the Codex launch kit before the next build sprint opens',
+  subheadline: 'Sold-out traffic now lands on a high-intent offer: setup guide, CAR templates, judge criteria, and team matching before registration reopens.',
+  primaryCta: 'Claim next-cohort invite',
+  secondaryCta: 'Preview shipped agents',
+  sideTitle: 'Cohort Launch Kit',
+  sideCopy: 'The poster becomes proof. The generated page sells a live next action instead of replaying a closed event.',
   posterTag: 'Generated Variant',
   trust: ['175 builders registered', 'Sold out fast', '3 build tracks', 'Judges from Scale, Depth, Impact'],
   facts: [
@@ -265,9 +272,11 @@ const DEFAULT_VARIANT_SITE = {
     { value: 'HCMC', label: 'Local build session' },
     { value: 'Open', label: 'Early invite status' },
   ],
-  proof: ['Judge credibility moved up', 'Luma link demoted', 'Sticky mobile CTA planned'],
-  modules: ['Fallback CTA above fold', 'Proof moved before agenda', 'Secondary links demoted'],
-  changes: ['Closed status reframed into a next-cohort availability banner', 'Waitlist CTA moved above secondary Luma and GitHub links', 'Judge and builder proof promoted before agenda', 'Hero copy rewritten around shipping the first working agent', 'Sticky mobile waitlist CTA queued for the next loop'],
+  proof: ['Setup guide unlocked', 'CAR templates included', 'Team matching before launch'],
+  modules: ['Invite ladder replaces dead-end status', 'Proof rail promoted above agenda', 'Luma/GitHub moved to resource drawer'],
+  experiments: ['Next test: launch kit vs cohort headline', 'Mobile sticky invite bar', 'Judge proof carousel'],
+  stickyCta: 'Sticky mobile bar: Claim invite + get setup guide',
+  changes: ['Closed status converted into a live next-cohort invite ladder', 'Hero offer changed from attending a closed event to claiming a launch kit', 'Poster demoted into proof so the form owns the visual hierarchy', 'Luma and GitHub links moved into a resource drawer after email capture', 'Next loop will test sticky mobile invite bar and judge-proof carousel'],
 };
 
 function LiftBar({ target }) {
