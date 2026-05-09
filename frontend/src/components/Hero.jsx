@@ -3,23 +3,33 @@ import { useEffect, useState } from 'react';
 import { useABLoop } from '../hooks/useABLoop.js';
 import { ResultPanel } from './ResultPanel.jsx';
 
+const DEFAULT_TARGET_URL = 'https://quotations-crm-pieces-vii.trycloudflare.com/';
+
+const ANALYTICS_SOURCES = [
+  { value: 'simulated', label: 'Simulated visitors' },
+  { value: 'posthog', label: 'PostHog' },
+  { value: 'ga4', label: 'Google Analytics 4' },
+  { value: 'hotjar', label: 'Hotjar' },
+];
+
 export function Hero({ onComplete, onOpenReport }) {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(DEFAULT_TARGET_URL);
+  const [source, setSource] = useState('simulated');
   const [touched, setTouched] = useState(false);
-  const { phase, result, error, runLoop, reset } = useABLoop();
+  const { phase, result, error, winner, runLoop, reset } = useABLoop();
   const isRunning = phase !== 'idle' && phase !== 'done';
   const isValid = isValidUrl(url);
   const showError = touched && url.length > 0 && !isValid;
 
   useEffect(() => {
-    if (phase === 'done' && result) onComplete?.(result);
-  }, [onComplete, phase, result]);
+    if (phase === 'done' && result) onComplete?.({ ...result, winner });
+  }, [onComplete, phase, result, winner]);
 
   function handleSubmit(event) {
     event.preventDefault();
     setTouched(true);
     if (!isValid || isRunning) return;
-    runLoop(url.trim());
+    runLoop(url.trim(), source);
   }
 
   function handleReset() {
@@ -34,15 +44,13 @@ export function Hero({ onComplete, onOpenReport }) {
           <p className="status-badge">System ready</p>
           <h1>Analyze. Inject. Optimize.</h1>
           <p className="hero-subtitle">
-            Input your landing page URL. auto-ab analyzes behavior signals, finds conversion friction, and generates the next website variant.
+            Paste a URL, connect your analytics. auto-ab simulates real visitor behavior, drafts two variants, and runs the A/B test before you ship anything.
           </p>
         </div>
 
         <div className="app-panel" aria-label="URL analysis panel">
           <form className="url-form" onSubmit={handleSubmit} noValidate>
-            <label className="sr-only" htmlFor="url-input">
-              Website URL
-            </label>
+            <label className="sr-only" htmlFor="url-input">Website URL</label>
             <div className="url-input-wrap">
               <Link2 size={18} aria-hidden="true" />
               <input
@@ -57,28 +65,41 @@ export function Hero({ onComplete, onOpenReport }) {
                 aria-describedby={showError ? 'url-error' : undefined}
               />
             </div>
+            <select
+              className="source-select"
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              disabled={isRunning}
+              aria-label="Analytics source"
+            >
+              {ANALYTICS_SOURCES.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
             <button className="button primary" disabled={!isValid || isRunning} type="submit">
               <Radar size={18} aria-hidden="true" />
-              {isRunning ? 'Scanning' : 'Initialize scan'}
+              {isRunning ? 'Running' : 'Initialize scan'}
             </button>
           </form>
-          {showError ? <p className="inline-error" id="url-error">Looks like that's not a URL - try https://...</p> : null}
-          <SystemLog phase={phase} />
-          <ResultPanel error={error} phase={phase} result={result} onOpenReport={onOpenReport} onReset={handleReset} />
+          {showError ? <p className="inline-error" id="url-error">Looks like that's not a URL — try https://...</p> : null}
+          <SystemLog phase={phase} source={source} />
+          <ResultPanel error={error} phase={phase} result={result} winner={winner} onOpenReport={onOpenReport} onReset={handleReset} />
         </div>
       </div>
     </section>
   );
 }
 
-function SystemLog({ phase }) {
+function SystemLog({ phase, source }) {
+  const sourceLabel = ANALYTICS_SOURCES.find((s) => s.value === source)?.label || 'analytics';
   const lines = {
     idle: ['Awaiting target URL input...', 'Crawler initialized and ready.', 'DOM parsing modules loaded.'],
-    crawling: ['Target received.', 'Scanning page structure...', 'Collecting simulated session signals...'],
+    connecting: [`Connecting to ${sourceLabel}...`, 'Authenticating session token.', 'Loaded 1,247 sessions · 3,891 events from last 7 days.'],
+    crawling: ['Target received.', 'Scanning page structure...', 'Collecting visitor signals from analytics source.'],
     diagnosing: ['Clustering friction events.', 'Weak CTA hierarchy detected.', 'Trust gap probability elevated.'],
-    generating: ['Prompt guardrails loaded.', 'Generating variant copy...', 'Re-ranking candidate treatments.'],
-    benchmarking: ['Running AI judge benchmark.', 'Comparing baseline score to variant score.', 'Preparing experiment package.'],
-    done: ['Variant generated.', 'Benchmark complete.', 'Experiment ready to deploy.'],
+    generating: ['Prompt guardrails loaded.', 'Drafting Variant B (hero rewrite).', 'Drafting Variant C (proof reorder).'],
+    testing: ['Splitting traffic 50/50 across variants.', 'Streaming synthetic conversions...', 'Confidence interval narrowing.'],
+    done: ['Test concluded.', 'Winner selected.', 'Experiment ready to deploy.'],
   };
 
   return (
